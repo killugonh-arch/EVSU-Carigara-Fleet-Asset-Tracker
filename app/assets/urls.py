@@ -21,4 +21,8 @@ urlpatterns = [
     path('asset-requests/new/',           views.asset_request_create,   name='asset_request_create'),
     path('asset-requests/<int:pk>/review/', views.asset_request_review, name='asset_request_review'),
     path('asset-requests/<int:pk>/delete/', views.asset_request_delete, name='asset_request_delete'),
+    # Maintenance Technician Portal
+    path('maintenance-portal/',           views.maintenance_portal,     name='maintenance_portal'),
+    path('maintenance-portal/notifications/', views.maintenance_notifications, name='maintenance_notifications'),
+    path('maintenance-portal/notifications/<int:pk>/read/', views.maintenance_notification_mark_read, name='notification_mark_read'),
 ]

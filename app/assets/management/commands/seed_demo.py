@@ -34,6 +34,12 @@ class Command(BaseCommand):
         })
         driver2.set_password('driver123'); driver2.save()
 
+        tech1, _ = User.objects.get_or_create(username='tech1', defaults={
+            'first_name': 'Carlos', 'last_name': 'Mendoza', 'role': User.MAINTENANCE,
+            'department': 'Motorpool', 'email': 'tech1@university.edu',
+        })
+        tech1.set_password('tech1234'); tech1.save()
+
         van01, _ = Asset.objects.get_or_create(asset_tag='UV-001', defaults=dict(
             asset_type='vehicle', name='Toyota HiAce (Van 01)', make='Toyota',
             model_name='HiAce', year=2020, license_plate='ABD 1234', fuel_type='Diesel',
@@ -89,16 +95,18 @@ class Command(BaseCommand):
             requested_date=today - timedelta(days=15), completed_date=today - timedelta(days=5))
         mr3.save()
 
-        MileageLog.objects.get_or_create(
+        # Use update_or_create so re-running seed never fails
+        MileageLog.objects.update_or_create(
             asset=van01, driver=driver1, log_date=today,
             defaults=dict(odometer=78400, trip_km=120, purpose='Campus shuttle'))
-        MileageLog.objects.get_or_create(
+        MileageLog.objects.update_or_create(
             asset=van01, driver=driver1, log_date=today - timedelta(days=1),
             defaults=dict(odometer=78280, trip_km=200, purpose='Airport transfer'))
 
         self.stdout.write(self.style.SUCCESS(
             '\nDemo data seeded!\n'
-            '  manager1 / manager123\n'
-            '  auditor1 / auditor123\n'
-            '  driver1  / driver123\n'
-            '  driver2  / driver123\n'))
+            '  manager1 / manager123      (Motorpool Manager)\n'
+            '  auditor1 / auditor123      (Auditor)\n'
+            '  driver1  / driver123       (Staff / Driver)\n'
+            '  driver2  / driver123       (Staff / Driver)\n'
+            '  tech1    / tech1234        (Maintenance Technician)\n'))

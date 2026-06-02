@@ -197,6 +197,7 @@
     .stat-icon-jade  { background: rgba(39,174,114,.1); color: var(--jade); }
     .stat-icon-gold  { background: rgba(212,160,23,.1); color: var(--gold); }
     .stat-icon-rose  { background: rgba(229,68,90,.1);  color: var(--rose); }
+    .stat-icon-blue  { background: rgba(52,120,210,.1); color: #3478d2; }
     .stat-icon-teal  { background: rgba(0,180,166,.1);  color: var(--teal); }
     .stat-icon-sky   { background: rgba(74,171,219,.1); color: var(--sky); }
     .stat-label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 2px; }
@@ -255,9 +256,10 @@
     .badge-high      { background: #FFF0E8; color: #d04c00; }
     .badge-medium    { background: #FFF8EC; color: #c07300; }
     .badge-low       { background: #F0F2F8; color: var(--text-muted); }
-    .badge-manager   { background: rgba(107,0,0,.08); color: var(--maroon); }
-    .badge-auditor   { background: rgba(0,180,166,.1); color: var(--teal); }
-    .badge-staff     { background: #F0F2F8; color: var(--text-muted); }
+    .badge-manager     { background: rgba(107,0,0,.08); color: var(--maroon); }
+    .badge-auditor     { background: rgba(0,180,166,.1); color: var(--teal); }
+    .badge-staff       { background: #F0F2F8; color: var(--text-muted); }
+    .badge-maintenance { background: rgba(212,160,23,.12); color: #8a5e00; }
 
     .wo-tag {
       font-family: 'DM Mono', monospace; font-size: 12px;
@@ -352,6 +354,28 @@
   </div>
 
   <nav class="sidebar-nav">
+
+    {% if user.is_maintenance %}
+    {# ── Maintenance Technician sidebar ── #}
+    <a class="nav-link {% block nav_portal %}{% endblock %}" href="{% url 'maintenance_portal' %}">
+      <i class="bi bi-house-gear"></i> My Portal
+    </a>
+    <a class="nav-link {% block nav_notifs %}{% endblock %}" href="{% url 'maintenance_notifications' %}">
+      <i class="bi bi-bell"></i> Notifications
+      {% if maintenance_notif_count %}
+      <span class="nav-badge">{{ maintenance_notif_count }}</span>
+      {% endif %}
+    </a>
+    <hr class="sidebar-divider">
+    <a class="nav-link {% block nav_maintenance_tech %}{% endblock %}" href="{% url 'maintenance_list' %}">
+      <i class="bi bi-wrench-adjustable"></i> All Work Orders
+    </a>
+    <a class="nav-link {% block nav_assets_tech %}{% endblock %}" href="{% url 'asset_list' %}">
+      <i class="bi bi-truck"></i> Fleet Assets
+    </a>
+
+    {% else %}
+    {# ── Standard sidebar ── #}
     <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}">
       <i class="bi bi-speedometer2"></i> Dashboard
     </a>
@@ -386,6 +410,8 @@
       <i class="bi bi-code-slash"></i> API Explorer
     </a>
     {% endif %}
+    {% endif %}
+
   </nav>
 
   <div class="sidebar-footer">
@@ -395,7 +421,8 @@
         <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
         <div class="user-role">{{ user.get_role_display }}</div>
       </div>
-      <a href="{% url 'logout' %}" title="Logout" style="color:rgba(255,255,255,.3); font-size:16px; margin-left:4px;">
+      <a href="{% url 'logout' %}" title="Logout" style="color:rgba(255,255,255,.3); font-size:16px; margin-left:4px;"
+         onclick="return confirmLogout(event)">
         <i class="bi bi-box-arrow-right"></i>
       </a>
     </div>
@@ -437,5 +464,40 @@
 {% endblock %}
 
 {% block scripts %}{% endblock %}
+
+<script>
+function confirmLogout(e) {
+  e.preventDefault();
+  var href = e.currentTarget.href;
+  // Build a custom modal-style confirm using a simple overlay
+  var overlay = document.createElement('div');
+  overlay.id = 'logout-confirm-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:32px 28px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.22);text-align:center;">
+      <div style="margin-bottom:14px;font-size:36px;"><i class="bi bi-box-arrow-right" style="color:#7a1b2a;"></i></div>
+      <h3 style="margin:0 0 8px;font-size:17px;font-weight:700;color:#1a1a2e;">Log out?</h3>
+      <p style="margin:0 0 24px;font-size:14px;color:#666;">Are you sure you want to log out of the system?</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="logout-cancel-btn"
+          style="flex:1;padding:9px 0;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;font-size:14px;font-weight:600;cursor:pointer;color:#444;">
+          No, Stay
+        </button>
+        <a id="logout-confirm-btn" href="${href}"
+          style="flex:1;padding:9px 0;border-radius:8px;background:#7a1b2a;color:#fff;font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;">
+          Yes, Log Out
+        </a>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('logout-cancel-btn').addEventListener('click', function() {
+    overlay.remove();
+  });
+  overlay.addEventListener('click', function(ev) {
+    if (ev.target === overlay) overlay.remove();
+  });
+  return false;
+}
+</script>
 </body>
 </html>

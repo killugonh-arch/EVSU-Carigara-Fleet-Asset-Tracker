@@ -8,15 +8,18 @@ class User(AbstractUser):
       STAFF        – regular driver/staff: log requests, view own records
       AUDITOR      – read-only across all records, no financial data
       MANAGER      – full access including fleet valuation & procurement costs
+      MAINTENANCE  – maintenance technician: receives notifications on approved WOs, updates progress
     """
-    STAFF = 'staff'
-    AUDITOR = 'auditor'
-    MANAGER = 'manager'
+    STAFF       = 'staff'
+    AUDITOR     = 'auditor'
+    MANAGER     = 'manager'
+    MAINTENANCE = 'maintenance'
 
     ROLE_CHOICES = [
-        (STAFF,   'Staff / Driver'),
-        (AUDITOR, 'Auditor (Read-Only)'),
-        (MANAGER, 'Motorpool Manager'),
+        (STAFF,       'Staff / Driver'),
+        (AUDITOR,     'Auditor (Read-Only)'),
+        (MANAGER,     'Motorpool Manager'),
+        (MAINTENANCE, 'Maintenance Technician'),
     ]
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=STAFF)
@@ -42,6 +45,10 @@ class User(AbstractUser):
     @property
     def is_staff_role(self):
         return self.role == self.STAFF
+
+    @property
+    def is_maintenance(self):
+        return self.role == self.MAINTENANCE
 
     @property
     def can_see_financials(self):

@@ -157,16 +157,36 @@ class MaintenanceRequest(models.Model):
             super().save(*args, **kwargs)
 
 class MileageLog(models.Model):
-    """Driver-submitted mileage entries via mobile API."""
+    """Driver-submitted mileage entries."""
+
+    STATUS_PENDING  = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES  = [
+        (STATUS_PENDING,  'Pending Review'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
     asset      = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name='mileage_logs',
                                    limit_choices_to={'asset_type': AssetType.VEHICLE})
-    driver     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    driver     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                   related_name='mileage_logs')
     odometer   = models.PositiveIntegerField(help_text='Odometer reading at submission (km)')
     trip_km    = models.PositiveIntegerField(default=0, help_text='Distance covered this trip (km)')
     log_date   = models.DateField(default=timezone.now)
     purpose    = models.CharField(max_length=200, blank=True)
     notes      = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Review fields (added in migration 0006)
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES,
+                                   default=STATUS_PENDING, db_index=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                    null=True, blank=True,
+                                    related_name='reviewed_mileage_logs')
+    review_notes = models.TextField(blank=True, help_text='Admin notes on approval/rejection')
+    reviewed_at  = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-log_date', '-created_at']
@@ -176,7 +196,6 @@ class MileageLog(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
         if self.odometer > self.asset.mileage:
             Asset.objects.filter(pk=self.asset_id).update(mileage=self.odometer)
 
@@ -214,3 +233,27 @@ class AssetRequest(models.Model):
 
     def __str__(self):
         return f'AssetReq #{self.pk} – {self.name} ({self.get_status_display()})'
+
+
+class MaintenanceNotification(models.Model):
+    """Notification sent to maintenance staff when a request is created or updated."""
+    maintenance_request = models.ForeignKey(
+        MaintenanceRequest,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='maintenance_notifications',
+        limit_choices_to={'role': 'maintenance'},
+    )
+    message    = models.TextField()
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Notification for {self.recipient} – {self.maintenance_request}'

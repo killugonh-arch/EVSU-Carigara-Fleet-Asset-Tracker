@@ -81,3 +81,55 @@
 [2026-06-01 20:31:19,664] AUDIT INFO user=fleet.audit ASSET_UPDATED by=manager1 asset_tag=EVSU-OT-00003
 [2026-06-01 20:41:20,431] AUDIT INFO user=fleet.audit LOGOUT username=manager1 ip=127.0.0.1
 [2026-06-01 20:41:35,149] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=driver1 ip=127.0.0.1
+[2026-06-02 11:27:33,745] AUDIT INFO user=fleet.audit LOGOUT username=driver1 ip=127.0.0.1
+[2026-06-02 11:27:48,689] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager1 ip=127.0.0.1
+[2026-06-02 12:17:38,975] AUDIT INFO user=fleet.audit LOGOUT username=manager1 ip=127.0.0.1
+[2026-06-02 12:17:48,570] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=driver1 ip=127.0.0.1
+[2026-06-02 12:20:25,178] AUDIT INFO user=fleet.audit LOGOUT username=driver1 ip=127.0.0.1
+[2026-06-02 12:20:37,529] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager1 ip=127.0.0.1
+[2026-06-02 13:40:44,294] AUDIT INFO user=fleet.audit LOGOUT username=manager1 ip=127.0.0.1
+[2026-06-02 13:41:08,538] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=driver1 ip=127.0.0.1
+[2026-06-02 14:35:19,724] AUDIT INFO user=fleet.audit LOGOUT username=driver1 ip=127.0.0.1
+[2026-06-02 14:35:30,549] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager1 ip=127.0.0.1
+[2026-06-02 19:44:15,197] AUDIT WARNING user=axes.handlers.database AXES: New login failure by {ip_address: "********************", path_info: "/accounts/login/"}. Created new record in the database.
+[2026-06-02 19:44:15,211] AUDIT WARNING user=fleet.audit LOGIN_FAILURE username=tech1 ip=127.0.0.1
+[2026-06-02 19:44:25,430] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=tech1 ip=127.0.0.1
+[2026-06-02 19:46:30,351] AUDIT INFO user=fleet.audit LOGOUT username=tech1 ip=127.0.0.1
+[2026-06-02 19:46:42,746] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager1 ip=127.0.0.1
+[2026-06-02 19:47:27,981] AUDIT INFO user=fleet.audit ASSET_REQUEST_REVIEWED by=manager1 id=3 status=approved
+[2026-06-02 19:47:28,025] AUDIT INFO user=fleet.audit ASSET_AUTO_CREATED from_request=3 asset_tag=EVSU-VH-00009 by=manager1
+[2026-06-02 19:47:43,979] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000026
+[2026-06-02 19:47:47,147] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000025
+[2026-06-02 19:47:50,551] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000024
+[2026-06-02 19:47:54,523] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000016
+[2026-06-02 19:47:57,538] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000023
+[2026-06-02 19:48:01,266] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000017
+[2026-06-02 19:48:04,186] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000022
+[2026-06-02 19:48:08,104] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000018
+[2026-06-02 19:48:14,032] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000014
+[2026-06-02 19:48:17,187] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000013
+[2026-06-02 19:48:26,999] AUDIT INFO user=fleet.audit LOGOUT username=manager1 ip=127.0.0.1
+[2026-06-02 19:48:39,497] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=driver1 ip=127.0.0.1
+[2026-06-02 19:49:16,070] AUDIT INFO user=fleet.audit MR_CREATED by=driver1 wo=WO-000027 asset=EVSU-VH-00009
+[2026-06-02 19:49:31,207] AUDIT INFO user=fleet.audit LOGOUT username=driver1 ip=127.0.0.1
+[2026-06-02 19:49:40,810] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager1 ip=127.0.0.1
+[2026-06-02 19:49:56,442] AUDIT INFO user=fleet.audit MR_STATUS_CHANGE by=manager1 wo=WO-000027 status=approved
+[2026-06-02 19:50:00,516] AUDIT INFO user=fleet.audit LOGOUT username=manager1 ip=127.0.0.1
+[2026-06-02 19:50:19,681] AUDIT WARNING user=axes.handlers.database AXES: New login failure by {ip_address: "********************", path_info: "/accounts/login/"}. Created new record in the database.
+[2026-06-02 19:50:19,693] AUDIT WARNING user=fleet.audit LOGIN_FAILURE username=tech1 ip=127.0.0.1
+[2026-06-02 19:50:30,845] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=tech1 ip=127.0.0.1
+[2026-06-02 19:54:45,380] AUDIT INFO user=fleet.audit LOGOUT username=tech1 ip=127.0.0.1
+[2026-06-02 19:54:59,904] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager1 ip=127.0.0.1
+[2026-06-02 20:50:56,334] AUDIT INFO user=fleet.audit MR_CREATED by=manager1 wo=WO-000028 asset=PU-001
+[2026-06-02 20:52:17,088] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000019
+[2026-06-02 20:52:26,215] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000015
+[2026-06-02 21:17:31,689] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000021
+[2026-06-02 21:17:40,229] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000028
+[2026-06-02 21:17:50,794] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000020
+[2026-06-02 21:17:54,041] AUDIT INFO user=fleet.audit MR_DELETED by=manager1 wo=WO-000027
+[2026-06-02 21:18:00,629] AUDIT INFO user=fleet.audit ASSET_DELETED by=manager1 asset_tag=EVSU-OT-00003
+[2026-06-02 21:18:06,177] AUDIT INFO user=fleet.audit ASSET_DELETED by=manager1 asset_tag=EVSU-IT-00002
+[2026-06-02 21:18:10,151] AUDIT INFO user=fleet.audit ASSET_DELETED by=manager1 asset_tag=EVSU-VH-00001
+[2026-06-02 21:18:15,148] AUDIT INFO user=fleet.audit ASSET_DELETED by=manager1 asset_tag=EVSU-VH-00009
+[2026-06-02 21:18:18,917] AUDIT INFO user=fleet.audit ASSET_DELETED by=manager1 asset_tag=PU-001
+[2026-06-02 21:18:22,032] AUDIT INFO user=fleet.audit ASSET_DELETED by=manager1 asset_tag=UV-002

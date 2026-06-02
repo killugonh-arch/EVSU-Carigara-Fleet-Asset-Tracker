@@ -3,12 +3,39 @@
 {% block page_title %}Maintenance Requests{% endblock %}
 {% block nav_maintenance %}active{% endblock %}
 
+{% block extra_style %}
+<style>
+  /* ── Urgent priority row highlight ── */
+  .priority-urgent td {
+    border-top: 6px solid #ef4444 !important;
+    border-bottom: 6px solid #ef4444 !important;
+    background-color: rgb(248, 244, 244) !important;
+  }
+  
+  .priority-urgent td:first-child {
+    border-left: 6px solid #ef4444 !important;
+  }
+  
+  .priority-urgent td:last-child {
+    border-right: 6px solid #ef4444 !important;
+  }
+</style>
+{% endblock %}
+
 {% block topbar_actions %}
 {% endblock %}
 
 {% block content %}
 <form method="get">
 <div class="filter-bar">
+  <div class="filter-field">
+    <label class="filter-label">Search (Work Order / Asset Tag)</label>
+    {{ filter.form.search }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">Title</label>
+    {{ filter.form.title }}
+  </div>
   <div class="filter-field">
     <label class="filter-label">Status</label>
     {{ filter.form.status }}
@@ -54,7 +81,7 @@
     </thead>
     <tbody>
       {% for r in requests %}
-      <tr>
+      <tr class="priority-{{ r.priority }}">
         <td><span class="wo-tag">{{ r.work_order_number }}</span></td>
         <td>
           <a href="{% url 'asset_detail' r.asset.pk %}" style="font-weight:600;color:var(--maroon);font-size:12.5px">{{ r.asset.asset_tag }}</a>
