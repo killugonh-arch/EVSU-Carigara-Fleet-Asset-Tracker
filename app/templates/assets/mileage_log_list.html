@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Mileage Log Review{% endblock %}
+{% block page_title %}Mileage Log Review{% endblock %}
+{% block nav_mileage_review %}active{% endblock %}
+
+{% block content %}
+
+<style>
+.filter-tab {
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--text-muted);border:1.5px solid var(--border);background:var(--surface);
+  transition:all .15s;cursor:pointer;
+}
+.filter-tab:hover { border-color:var(--maroon);color:var(--maroon); }
+.filter-tab.active { background:var(--maroon);color:#fff;border-color:var(--maroon); }
+.filter-count {
+  font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;
+  background:rgba(0,0,0,.08);color:inherit;
+}
+.filter-count.pending  { background:rgba(212,160,23,.18);color:#b8860b; }
+.filter-count.approved { background:rgba(39,174,114,.15);color:#1a7a4a; }
+.filter-count.rejected { background:rgba(231,76,60,.12);color:#c0392b; }
+.filter-tab.active .filter-count { background:rgba(255,255,255,.2);color:#fff; }
+
+.badge-pending  { background:rgba(212,160,23,.15);color:#9a6a00;border:1px solid rgba(212,160,23,.3);font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;display:inline-block; }
+.badge-approved { background:rgba(39,174,114,.12);color:#1a7a4a;border:1px solid rgba(39,174,114,.3);font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;display:inline-block; }
+.badge-rejected { background:rgba(231,76,60,.10);color:#c0392b;border:1px solid rgba(231,76,60,.25);font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;display:inline-block; }
+</style>
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+  <a href="?status=" class="filter-tab {% if not status_filter %}active{% endif %}">
+    All <span class="filter-count">{{ counts.all }}</span>
+  </a>
+  <a href="?status=pending" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">
+    Pending <span class="filter-count pending">{{ counts.pending }}</span>
+  </a>
+  <a href="?status=approved" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">
+    Approved <span class="filter-count approved">{{ counts.approved }}</span>
+  </a>
+  <a href="?status=rejected" class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">
+    Rejected <span class="filter-count rejected">{{ counts.rejected }}</span>
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-speedometer" style="color:var(--teal)"></i>
+      Mileage Log Submissions
+      {% if counts.pending %}
+        <span style="margin-left:8px;background:var(--rose);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px">
+          {{ counts.pending }} pending
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Vehicle</th>
+        <th>Driver</th>
+        <th>Date</th>
+        <th>Odometer</th>
+        <th>Trip</th>
+        <th>Location / Purpose</th>
+        <th>Status</th>
+        <th style="text-align:right">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>
+          <div style="font-weight:600;font-size:13px">{{ log.asset.name }}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);font-family:'DM Mono',monospace">
+            {{ log.asset.asset_tag }}{% if log.asset.license_plate %} · {{ log.asset.license_plate }}{% endif %}
+          </div>
+        </td>
+        <td style="font-size:13px">{{ log.driver|default:"—" }}</td>
+        <td style="font-size:13px;white-space:nowrap">{{ log.log_date|date:"M d, Y" }}</td>
+        <td style="font-family:'DM Mono',monospace;font-weight:600;font-size:13.5px">{{ log.odometer }} km</td>
+        <td style="font-size:13px;color:var(--teal);font-weight:600">
+          {% if log.trip_km %}+{{ log.trip_km }} km{% else %}—{% endif %}
+        </td>
+        <td style="max-width:180px;font-size:12.5px;color:var(--text-muted)">
+          {% if log.purpose %}<div>{{ log.purpose }}</div>{% endif %}
+          {% if log.notes %}<div style="font-size:11.5px">{{ log.notes|truncatechars:60 }}</div>{% endif %}
+          {% if not log.purpose and not log.notes %}—{% endif %}
+        </td>
+        <td>
+          {% if log.status == 'pending' %}
+            <span class="badge-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
+          {% elif log.status == 'approved' %}
+            <span class="badge-approved"><i class="bi bi-check-circle-fill"></i> Approved</span>
+          {% else %}
+            <span class="badge-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right;white-space:nowrap">
+          {% if log.status == 'pending' and not user.is_auditor %}
+          <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
+            {# Quick inline approve #}
+            <form method="post" action="{% url 'mileage_log_review' log.pk %}" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="approved">
+              <input type="hidden" name="review_notes" value="">
+              <button type="submit" class="btn btn-xs"
+                      style="background:rgba(39,174,114,.12);color:#1a7a4a;border:1px solid rgba(39,174,114,.35);font-weight:600"
+                      title="Approve"
+                      onclick="return confirm('Approve this mileage log?\n{{ log.asset.asset_tag }} — {{ log.odometer }} km')">
+                <i class="bi bi-check-lg"></i> Approve
+              </button>
+            </form>
+            {# Link to full review page for rejection / adding notes #}
+            <a href="{% url 'mileage_log_review' log.pk %}" class="btn btn-xs"
+               style="background:rgba(231,76,60,.1);color:#c0392b;border:1px solid rgba(231,76,60,.3);font-weight:600"
+               title="Review / Reject">
+              <i class="bi bi-clipboard-check"></i> Review
+            </a>
+          </div>
+          {% else %}
+          <a href="{% url 'mileage_log_review' log.pk %}" class="btn btn-xs btn-outline">
+            <i class="bi bi-eye"></i> View
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8">
+          <div class="empty-state">
+            <i class="bi bi-speedometer"></i>
+            <p>No mileage log submissions{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if logs.has_other_pages %}
+  <div style="display:flex;justify-content:center;gap:8px;padding:16px">
+    {% if logs.has_previous %}
+    <a href="?status={{ status_filter }}&page={{ logs.previous_page_number }}" class="btn btn-outline btn-sm">← Prev</a>
+    {% endif %}
+    <span style="padding:6px 12px;font-size:13px;color:var(--text-muted)">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
+    {% if logs.has_next %}
+    <a href="?status={{ status_filter }}&page={{ logs.next_page_number }}" class="btn btn-outline btn-sm">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

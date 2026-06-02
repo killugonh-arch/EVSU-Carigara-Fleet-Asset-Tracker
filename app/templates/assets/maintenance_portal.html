@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Maintenance Portal{% endblock %}
+{% block page_title %}Maintenance Portal{% endblock %}
+{% block nav_portal %}active{% endblock %}
+
+{% block extra_style %}
+<style>
+  .notif-card {
+    border-left: 4px solid var(--gold);
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: opacity .2s;
+  }
+  .notif-card.unread { border-left-color: var(--maroon); background: #fff7f7; }
+  .notif-card.read   { opacity: .7; }
+  .notif-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(107,0,0,.1); color: var(--maroon);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .notif-icon.unread { background: var(--maroon); color: #fff; }
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-msg  { font-size: 13.5px; font-weight: 500; color: var(--text); line-height: 1.55; }
+  .notif-time { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+  .notif-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .stat-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 99px; padding: 5px 14px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+  }
+  .stat-pill i { font-size: 15px; }
+
+  .wo-row { cursor: pointer; transition: background .15s; }
+  .wo-row:hover td { background: rgba(107,0,0,.03); }
+
+  /* ── Priority row highlights ── */
+  .wo-row.priority-urgent td {
+    background-color: #fee2e2;
+    border-left: 4px solid #dc2626;
+  }
+  .wo-row.priority-urgent:hover td { background-color: #fecaca; }
+
+  .wo-row.priority-high td {
+    background-color: #ffedd5;
+    border-left: 4px solid #ea580c;
+  }
+  .wo-row.priority-high:hover td { background-color: #fed7aa; }
+
+  .wo-row.priority-medium td {
+    background-color: #fef9c3;
+    border-left: 4px solid #d97706;
+  }
+  .wo-row.priority-medium:hover td { background-color: #fef08a; }
+
+  .wo-row.priority-low td {
+    background-color: #dcfce7;
+    border-left: 4px solid #16a34a;
+  }
+  .wo-row.priority-low:hover td { background-color: #bbf7d0; }
+
+  .portal-welcome {
+    background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-light) 100%);
+    color: #fff; border-radius: var(--radius); padding: 24px 28px;
+    margin-bottom: 24px; display: flex; align-items: center; gap: 20px;
+    box-shadow: var(--shadow-md);
+  }
+  .portal-welcome-icon { font-size: 44px; opacity: .85; flex-shrink: 0; }
+  .portal-welcome h2  { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .portal-welcome p   { font-size: 13.5px; opacity: .75; }
+  .portal-welcome-stats { margin-left: auto; display: flex; gap: 24px; flex-shrink: 0; }
+  .pws-item { text-align: center; }
+  .pws-num  { font-size: 28px; font-weight: 800; color: var(--gold); line-height: 1; }
+  .pws-lbl  { font-size: 10.5px; opacity: .7; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Welcome Banner ── #}
+<div class="portal-welcome">
+  <div class="portal-welcome-icon"><i class="bi bi-tools"></i></div>
+  <div>
+    <h2>Welcome, {{ user.get_full_name|default:user.username }}</h2>
+    <p>Maintenance Technician · {{ today|date:"l, F j, Y" }}</p>
+  </div>
+  <div class="portal-welcome-stats">
+    <div class="pws-item">
+      <div class="pws-num">{{ unread_count }}</div>
+      <div class="pws-lbl">Unread Alerts</div>
+    </div>
+    <div class="pws-item">
+      <div class="pws-num">{{ approved_count }}</div>
+      <div class="pws-lbl">Awaiting Action</div>
+    </div>
+    <div class="pws-item">
+      <div class="pws-num">{{ in_progress_count }}</div>
+      <div class="pws-lbl">In Progress</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:24px">
+
+  {# ── Notifications Panel ── #}
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <i class="bi bi-bell-fill" style="color:var(--gold)"></i>
+          Notifications
+          {% if unread_count %}
+          <span style="background:var(--rose);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:6px">{{ unread_count }} new</span>
+          {% endif %}
+        </div>
+        <a href="{% url 'maintenance_notifications' %}" class="btn btn-outline btn-sm">View All</a>
+      </div>
+
+      {% if unread_notifs %}
+        {% for notif in unread_notifs %}
+        <div class="notif-card unread" id="notif-{{ notif.pk }}">
+          <div class="notif-icon unread"><i class="bi bi-bell-fill"></i></div>
+          <div class="notif-body">
+            <div class="notif-msg">{{ notif.message }}</div>
+            <div class="notif-time"><i class="bi bi-clock" style="font-size:10px"></i> {{ notif.created_at|timesince }} ago</div>
+          </div>
+          <div class="notif-actions">
+            <a href="{% url 'maintenance_detail' notif.maintenance_request.pk %}" class="btn btn-primary btn-xs">View WO</a>
+            <button class="btn btn-outline btn-xs mark-read-btn" data-pk="{{ notif.pk }}" title="Mark as read">
+              <i class="bi bi-check2"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding:32px 20px">
+          <i class="bi bi-bell-slash"></i>
+          <p>No new notifications. You're all caught up!</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Active Work Orders ── #}
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <i class="bi bi-wrench-adjustable" style="color:var(--gold)"></i>
+          Active Work Orders
+        </div>
+        <a href="{% url 'maintenance_list' %}" class="btn btn-outline btn-sm">All WOs</a>
+      </div>
+
+      {% if active_wos %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Work Order</th>
+            <th>Asset</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Scheduled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for wo in active_wos %}
+          {% url 'maintenance_detail' wo.pk as wo_url %}
+          <tr class="wo-row priority-{{ wo.priority }}" onclick="location.href='{{ wo_url }}'">
+            <td><span class="wo-tag">{{ wo.work_order_number }}</span></td>
+            <td>
+              <div style="font-weight:600;font-size:12.5px;color:var(--maroon)">{{ wo.asset.asset_tag }}</div>
+              <div class="text-muted" style="font-size:11.5px">{{ wo.asset.name }}</div>
+            </td>
+            <td><span class="badge badge-{{ wo.priority }}">{{ wo.get_priority_display }}</span></td>
+            <td>
+              {% if wo.status == 'approved' %}
+              <span class="badge badge-approved" style="font-weight:700"><i class="bi bi-check-circle-fill" style="margin-right:3px"></i>{{ wo.get_status_display }}</span>
+              {% else %}
+              <span class="badge badge-{{ wo.status }}">{{ wo.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td style="font-size:12.5px">{{ wo.scheduled_date|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state" style="padding:32px 20px">
+        <i class="bi bi-clipboard-check"></i>
+        <p>No active work orders assigned at the moment.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# ── Recently Completed ── #}
+    {% if completed_wos %}
+    <div class="card" style="margin-top:20px">
+      <div class="card-header">
+        <div class="card-header-icon"><i class="bi bi-check-circle" style="color:var(--jade)"></i> Recently Completed</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Work Order</th><th>Asset</th><th>Completed</th></tr>
+        </thead>
+        <tbody>
+          {% for wo in completed_wos %}
+          {% url 'maintenance_detail' wo.pk as wo_url %}
+          <tr class="wo-row" onclick="location.href='{{ wo_url }}'">
+            <td><span class="wo-tag">{{ wo.work_order_number }}</span></td>
+            <td style="font-size:12.5px;font-weight:500">{{ wo.asset.name }}</td>
+            <td style="font-size:12.5px;color:var(--jade)"><i class="bi bi-calendar-check"></i> {{ wo.completed_date|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.mark-read-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const pk  = this.dataset.pk;
+    const row = document.getElementById('notif-' + pk);
+    fetch(`/maintenance-portal/notifications/${pk}/read/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    }).then(r => r.json()).then(data => {
+      if (data.ok) {
+        row.classList.remove('unread');
+        row.classList.add('read');
+        row.querySelector('.notif-icon').classList.remove('unread');
+        row.querySelector('.bi-bell-fill')?.classList.replace('bi-bell-fill', 'bi-bell');
+        this.remove();
+        const badge = document.querySelector('[style*="background:var(--rose)"]');
+        if (badge) {
+          let count = parseInt(badge.textContent) - 1;
+          if (count <= 0) badge.remove(); else badge.textContent = count + ' new';
+        }
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
