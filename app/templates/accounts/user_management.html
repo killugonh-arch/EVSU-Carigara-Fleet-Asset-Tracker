@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  
+  <div class="card" style="grid-column:1/3">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-people" style="color:var(--maroon)"></i> {{ users.count }} User{{ users.count|pluralize }}</div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th style="text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--maroon);flex-shrink:0">
+                {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+              </div>
+              <div>
+                <div class="fw-600" style="font-size:13.5px">{{ u.get_full_name|default:u.username }}</div>
+                {% if u.license_number %}<div class="text-muted" style="font-size:11.5px">License: {{ u.license_number }}</div>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="mono" style="font-size:13px">{{ u.username }}</td>
+          <td><span class="badge badge-{{ u.role }}">{{ u.get_role_display }}</span></td>
+          <td>{{ u.department|default:"—" }}</td>
+          <td style="font-size:13px">{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge badge-active">Active</span>
+            {% else %}
+            <span class="badge badge-retired">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center">
+            {% if u != request.user %}
+            <form method="post" action="{% url 'delete_user' u.pk %}" style="display:inline"
+                  onsubmit="return confirm('Delete user {{ u.username|escapejs }}? This cannot be undone.')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm"
+                      style="background:#FEF0F2;color:#a82038;border:1.5px solid rgba(229,68,90,.25);padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s"
+                      onmouseover="this.style.background='#a82038';this.style.color='#fff'"
+                      onmouseout="this.style.background='#FEF0F2';this.style.color='#a82038'">
+                <i class="bi bi-trash3"></i> Delete
+              </button>
+            </form>
+            {% else %}
+            <span class="text-muted" style="font-size:12px;font-style:italic">You</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty-state"><i class="bi bi-people"></i><p>No users found.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="grid-column:1/3">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-person-plus" style="color:var(--jade)"></i> Create New User</div>
+    </div>
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label">Username *</label>{{ form.username }}
+            {% if form.username.errors %}<div class="form-error">{{ form.username.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password *</label>{{ form.password1 }}
+            {% if form.password1.errors %}<div class="form-error">{{ form.password1.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password *</label>{{ form.password2 }}</div>
+        </div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label">First Name</label>{{ form.first_name }}</div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>{{ form.last_name }}</div>
+          <div class="form-group">
+            <label class="form-label">Role *</label>{{ form.role }}</div>
+        </div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label">Email</label>{{ form.email }}</div>
+          <div class="form-group">
+            <label class="form-label">Department</label>{{ form.department }}</div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>{{ form.phone }}</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <button type="submit" class="btn btn-gold"><i class="bi bi-person-plus"></i> Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

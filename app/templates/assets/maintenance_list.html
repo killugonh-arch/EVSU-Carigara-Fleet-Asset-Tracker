@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Maintenance{% endblock %}
+{% block page_title %}Maintenance Requests{% endblock %}
+{% block nav_maintenance %}active{% endblock %}
+
+{% block topbar_actions %}
+{% endblock %}
+
+{% block content %}
+<form method="get">
+<div class="filter-bar">
+  <div class="filter-field">
+    <label class="filter-label">Status</label>
+    {{ filter.form.status }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">Priority</label>
+    {{ filter.form.priority }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">From</label>
+    {{ filter.form.scheduled_date_after }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">To</label>
+    {{ filter.form.scheduled_date_before }}
+  </div>
+  <div style="display:flex;gap:8px;align-items:flex-end">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filter</button>
+    <a href="{% url 'maintenance_list' %}" class="btn btn-outline btn-sm">Clear</a>
+  </div>
+</div>
+</form>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-wrench-adjustable" style="color:var(--gold)"></i> {{ requests.paginator.count }} Work Order{{ requests.paginator.count|pluralize }}</div>
+    {% if not user.is_auditor %}
+    <a href="{% url 'maintenance_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> New Request</a>
+    {% endif %}
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Work Order</th>
+        <th>Asset</th>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Submitted By</th>
+        <th>Scheduled</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in requests %}
+      <tr>
+        <td><span class="wo-tag">{{ r.work_order_number }}</span></td>
+        <td>
+          <a href="{% url 'asset_detail' r.asset.pk %}" style="font-weight:600;color:var(--maroon);font-size:12.5px">{{ r.asset.asset_tag }}</a>
+          <div class="text-muted" style="font-size:11.5px">{{ r.asset.name }}</div>
+        </td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">{{ r.title }}</td>
+        <td><span class="badge badge-{{ r.priority }}">{{ r.get_priority_display }}</span></td>
+        <td><span class="badge badge-{{ r.status }}">{{ r.get_status_display }}</span></td>
+        <td style="font-size:13px">{{ r.submitted_by }}</td>
+        <td style="font-size:13px">{{ r.scheduled_date|default:"—" }}</td>
+        <td style="white-space:nowrap">
+          <a href="{% url 'maintenance_detail' r.pk %}" class="btn btn-outline btn-xs" title="View"><i class="bi bi-eye"></i></a>
+          {% if not user.is_auditor %}
+          <a href="{% url 'maintenance_edit' r.pk %}" class="btn btn-outline btn-xs" style="margin-left:4px" title="Edit"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'maintenance_delete' r.pk %}" style="display:inline;margin-left:4px"
+                onsubmit="return confirm('Delete work order {{ r.work_order_number|escapejs }} — {{ r.title|escapejs }}?\nThis cannot be undone.')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs" title="Delete"
+                    style="background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8"><div class="empty-state"><i class="bi bi-clipboard-x"></i><p>No maintenance requests match your filters.</p></div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if requests.has_other_pages %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+  <div class="text-muted" style="font-size:13px">Page {{ requests.number }} of {{ requests.paginator.num_pages }} — {{ requests.paginator.count }} total</div>
+  <nav class="pagination">
+    {% if requests.has_previous %}<a href="?{{ query_string }}&page={{ requests.previous_page_number }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>{% else %}<span class="page-btn disabled"><i class="bi bi-chevron-left"></i></span>{% endif %}
+    {% for num in requests.paginator.page_range %}
+      {% if requests.number == num %}<span class="page-btn active">{{ num }}</span>
+      {% elif num > requests.number|add:"-3" and num < requests.number|add:"3" %}<a href="?{{ query_string }}&page={{ num }}" class="page-btn">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if requests.has_next %}<a href="?{{ query_string }}&page={{ requests.next_page_number }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>{% else %}<span class="page-btn disabled"><i class="bi bi-chevron-right"></i></span>{% endif %}
+  </nav>
+</div>
+{% endif %}
+{% endblock %}

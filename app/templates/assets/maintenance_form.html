@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block nav_maintenance %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'maintenance_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:700px">
+
+{{ assets_json|json_script:"assets-data" }}
+
+<!-- Toast notification -->
+<div id="maint-toast" style="display:none;position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border-radius:12px;padding:13px 20px 13px 16px;box-shadow:0 6px 28px rgba(0,0,0,.18);gap:11px;align-items:center;min-width:320px;max-width:92vw;animation:toastIn .22s cubic-bezier(.4,0,.2,1)">
+  <i id="maint-toast-icon" class="bi bi-exclamation-triangle-fill" style="font-size:18px;flex-shrink:0"></i>
+  <div style="flex:1">
+    <div id="maint-toast-title" style="font-weight:700;font-size:13.5px;margin-bottom:1px"></div>
+    <div id="maint-toast-text" style="font-size:12.5px;color:#666;line-height:1.45"></div>
+  </div>
+  <button onclick="document.getElementById('maint-toast').style.display='none'" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;line-height:1;padding:0 0 0 4px">&times;</button>
+</div>
+
+<!-- Inline warning: asset in maintenance -->
+<div id="maintenance-warning" style="display:none;background:rgba(231,76,60,.08);border:1.5px solid rgba(231,76,60,.35);border-radius:10px;padding:13px 16px;margin-bottom:16px;gap:10px;align-items:flex-start">
+  <i class="bi bi-exclamation-triangle-fill" style="color:#e74c3c;font-size:17px;flex-shrink:0;margin-top:1px"></i>
+  <div>
+    <div style="font-weight:700;font-size:13.5px;color:#e74c3c;margin-bottom:2px">Already In Maintenance</div>
+    <div id="maintenance-warning-text" style="font-size:13px;color:#e74c3c;line-height:1.5"></div>
+  </div>
+</div>
+
+<!-- Inline warning: no asset selected -->
+<div id="no-asset-warning" style="display:none;background:rgba(230,126,34,.08);border:1.5px solid rgba(230,126,34,.4);border-radius:10px;padding:13px 16px;margin-bottom:16px;gap:10px;align-items:flex-start">
+  <i class="bi bi-cursor-fill" style="color:#e67e22;font-size:17px;flex-shrink:0;margin-top:1px"></i>
+  <div>
+    <div style="font-weight:700;font-size:13.5px;color:#e67e22;margin-bottom:2px">No Asset Selected</div>
+    <div style="font-size:13px;color:#e67e22;line-height:1.5">Please type an asset name and select it from the dropdown list before submitting.</div>
+  </div>
+</div>
+
+<style>
+@keyframes toastIn {
+  from { opacity:0; transform:translateX(-50%) translateY(-10px); }
+  to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+#asset-search.field-error {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 3px rgba(231,76,60,.18) !important;
+  animation: shake .32s cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  20%      { transform:translateX(-5px); }
+  40%      { transform:translateX(5px); }
+  60%      { transform:translateX(-4px); }
+  80%      { transform:translateX(4px); }
+}
+</style>
+
+<form method="post" novalidate>
+{% csrf_token %}
+{{ form.title }}
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-wrench-adjustable" style="color:var(--gold)"></i> Work Order Information</div>
+  </div>
+  <div class="card-body">
+
+    <div class="form-group" style="position:relative">
+      <label class="form-label">Asset *</label>
+      <div style="position:relative">
+        <input
+          id="asset-search"
+          type="text"
+          class="form-control"
+          placeholder="Type asset name, tag, or plate…"
+          autocomplete="off"
+          style="padding-right:32px"
+        >
+        <i class="bi bi-search" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;font-size:14px"></i>
+      </div>
+      <input type="hidden" name="asset" id="asset-hidden">
+      <div id="asset-dropdown" style="display:none;position:absolute;z-index:200;background:var(--card-bg,#fff);border:1.5px solid var(--border,#ddd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);width:100%;max-height:240px;overflow-y:auto;margin-top:2px"></div>
+      {% if form.asset.errors %}<div class="form-error">{{ form.asset.errors|join:" " }}</div>{% endif %}
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Priority</label>{{ form.priority }}</div>
+      <div class="form-group">
+        <label class="form-label">Request Date</label>{{ form.requested_date }}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Problem Details *</label>
+      {{ form.description }}
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Vendor (optional)</label>{{ form.vendor }}</div>
+      <div class="form-group">
+        <label class="form-label">Estimated Cost (₱)</label>{{ form.estimated_cost }}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Additional Notes</label>{{ form.notes }}</div>
+  </div>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+  <a href="{% url 'maintenance_list' %}" class="btn btn-outline">Cancel</a>
+  <button type="submit" id="submit-btn" class="btn btn-gold"><i class="bi bi-send"></i> Submit Work Order</button>
+</div>
+</form>
+</div>
+
+<script>
+(function () {
+  const ASSETS          = JSON.parse(document.getElementById('assets-data').textContent);
+  const search          = document.getElementById('asset-search');
+  const hidden          = document.getElementById('asset-hidden');
+  const drop            = document.getElementById('asset-dropdown');
+  const warning         = document.getElementById('maintenance-warning');
+  const warnTxt         = document.getElementById('maintenance-warning-text');
+  const noAssetWarning  = document.getElementById('no-asset-warning');
+  const submitBtn       = document.getElementById('submit-btn');
+  const toast           = document.getElementById('maint-toast');
+  const toastIcon       = document.getElementById('maint-toast-icon');
+  const toastTitle      = document.getElementById('maint-toast-title');
+  const toastTxt        = document.getElementById('maint-toast-text');
+  const form            = submitBtn.closest('form');
+
+  let selectedInMaintenance = false;
+  let toastTimer = null;
+
+  function typeIcon(a) {
+    return a.type === 'vehicle' ? 'bi-truck' : 'bi-pc-display';
+  }
+
+  /* ── Toast (type: 'error' | 'warning') ─────────────────── */
+  function showToast(title, msg, type) {
+    const c = type === 'warning' ? '#e67e22' : '#e74c3c';
+    const borderColor = type === 'warning' ? 'rgba(230,126,34,.45)' : 'rgba(231,76,60,.45)';
+    const iconClass = type === 'warning' ? 'bi-cursor-fill' : 'bi-exclamation-triangle-fill';
+    toast.style.border = '1.5px solid ' + borderColor;
+    toastIcon.className = 'bi ' + iconClass;
+    toastIcon.style.color = c;
+    toastTitle.style.color = c;
+    toastTitle.textContent = title;
+    toastTxt.textContent = msg;
+    toast.style.animation = 'none';
+    void toast.offsetWidth;
+    toast.style.animation = 'toastIn .22s cubic-bezier(.4,0,.2,1)';
+    toast.style.display = 'flex';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+  }
+
+  /* ── Inline banner + field highlight ───────────────────── */
+  function showWarning(a) {
+    const label = a.name + (a.tag ? ' (' + a.tag + ')' : '');
+    warnTxt.textContent = label + ' is currently In Maintenance. Please wait for the active work order to be resolved before submitting a new request.';
+    warning.style.display = 'flex';
+    selectedInMaintenance = true;
+    /* highlight field */
+    search.classList.add('field-error');
+  }
+
+  function hideWarning() {
+    warning.style.display = 'none';
+    noAssetWarning.style.display = 'none';
+    selectedInMaintenance = false;
+    search.classList.remove('field-error');
+    toast.style.display = 'none';
+    clearTimeout(toastTimer);
+  }
+
+  /* ── Select asset from dropdown ─────────────────────────── */
+  function selectAsset(a) {
+    search.value = a.name + (a.tag ? ' — ' + a.tag : '') + (a.plate ? ' · ' + a.plate : '');
+    hidden.value = a.pk;
+    drop.style.display = 'none';
+    if (a.status === 'maintenance') {
+      showWarning(a);
+    } else {
+      hideWarning();
+    }
+  }
+
+  /* ── Render dropdown list ───────────────────────────────── */
+  function renderDrop(matches) {
+    if (!matches.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = matches.map(a => {
+      const inMaint = a.status === 'maintenance';
+      return `<div data-pk="${a.pk}" style="padding:9px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--border,#eee);display:flex;gap:10px;align-items:center${inMaint ? ';opacity:.85' : ''}">
+        <i class="bi ${typeIcon(a)}" style="color:var(--teal);flex-shrink:0"></i>
+        <span>
+          <strong>${a.name}</strong>&nbsp;
+          <span style="color:var(--text-muted);font-size:12px">${a.tag}</span>
+          ${a.plate ? '<span style="color:var(--text-muted);font-size:12px"> · ' + a.plate + '</span>' : ''}
+        </span>
+        ${inMaint ? '<span style="margin-left:auto;font-size:11px;background:rgba(231,76,60,.12);color:#e74c3c;padding:2px 7px;border-radius:4px;font-weight:600;white-space:nowrap">In Maintenance</span>' : ''}
+      </div>`;
+    }).join('');
+    drop.style.display = 'block';
+    drop.querySelectorAll('[data-pk]').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectAsset(ASSETS.find(x => x.pk == el.dataset.pk));
+      });
+      el.addEventListener('mouseenter', () => el.style.background = 'rgba(0,180,166,.08)');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+    });
+  }
+
+  /* ── Block form submit (covers button click AND Enter key) ─ */
+  form.addEventListener('submit', e => {
+    /* Case 1: no asset selected from dropdown */
+    if (!hidden.value) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      search.classList.remove('field-error');
+      void search.offsetWidth;
+      search.classList.add('field-error');
+      search.focus();
+
+      noAssetWarning.style.display = 'flex';
+      noAssetWarning.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      showToast(
+        'No Asset Selected',
+        'Please type and select an asset from the dropdown before submitting.',
+        'warning'
+      );
+      return;
+    }
+
+    /* Case 2: asset is in maintenance */
+    if (selectedInMaintenance) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      search.classList.remove('field-error');
+      void search.offsetWidth;
+      search.classList.add('field-error');
+
+      warning.style.display = 'flex';
+      warning.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      const assetLabel = search.value.split(' — ')[0].trim() || 'This asset';
+      showToast(
+        'Asset Already In Maintenance',
+        assetLabel + ' is currently In Maintenance and cannot accept a new work order.',
+        'error'
+      );
+
+      search.focus();
+    }
+  });
+
+  /* ── Search input ───────────────────────────────────────── */
+  search.addEventListener('input', () => {
+    const q = search.value.toLowerCase().trim();
+    hidden.value = '';
+    hideWarning();
+    if (!q) { drop.style.display = 'none'; return; }
+    renderDrop(
+      ASSETS.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.tag.toLowerCase().includes(q) ||
+        a.plate.toLowerCase().includes(q)
+      ).slice(0, 10)
+    );
+  });
+
+  /* ── Close dropdown on outside click ───────────────────── */
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#asset-search') && !e.target.closest('#asset-dropdown'))
+      drop.style.display = 'none';
+  });
+})();
+</script>
+
+{% endblock %}

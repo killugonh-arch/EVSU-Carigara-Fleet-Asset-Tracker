@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Request New Asset{% endblock %}
+{% block page_title %}Request New Asset{% endblock %}
+{% block nav_asset_requests %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'asset_request_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:620px">
+<form method="post" novalidate>
+{% csrf_token %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-box-seam" style="color:var(--gold)"></i> New Asset Request</div>
+  </div>
+  <div class="card-body">
+
+    <div class="form-section-title">Asset Details</div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Asset Type *</label>
+        {{ form.asset_type }}
+        {% if form.asset_type.errors %}<div class="form-error">{{ form.asset_type.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Asset Name / Description *</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="form-error">{{ form.name.errors|join:" " }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Make / Brand</label>
+        {{ form.make }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Model</label>
+        {{ form.model_name }}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Estimated Cost (₱)</label>
+      {{ form.estimated_cost }}
+      <div class="form-hint">Optional — helps with budget planning.</div>
+    </div>
+
+    <div class="form-section-title" style="margin-top:8px">Justification</div>
+    <div class="form-group">
+      <label class="form-label">Why is this asset needed? *</label>
+      {{ form.justification }}
+      {% if form.justification.errors %}<div class="form-error">{{ form.justification.errors|join:" " }}</div>{% endif %}
+      <div class="form-hint">Describe the operational need, department use case, and urgency.</div>
+    </div>
+
+  </div>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+  <a href="{% url 'asset_request_list' %}" class="btn btn-outline">Cancel</a>
+  <button type="submit" class="btn btn-gold"><i class="bi bi-send-fill"></i> Submit Request</button>
+</div>
+</form>
+</div>
+{% endblock %}

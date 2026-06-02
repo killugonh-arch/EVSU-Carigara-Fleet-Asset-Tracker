@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block topbar_actions %}
+{% if user.is_manager %}
+<a href="{% url 'asset_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> Add Asset</a>
+{% endif %}
+{% if not user.is_auditor %}
+<a href="{% url 'maintenance_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-wrench"></i> New Request</a>
+{% endif %}
+{% if user.is_staff_role and not user.is_superuser %}
+<a href="{% url 'asset_request_create' %}" class="btn btn-outline btn-sm"><i class="bi bi-box-seam"></i> Request Asset</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid-4" style="margin-bottom:22px">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-maroon"><i class="bi bi-truck"></i></div>
+    <div>
+      <div class="stat-label">Total Assets</div>
+      <div class="stat-value">{{ total_assets }}</div>
+      <div class="stat-sub">{{ total_vehicles }} vehicles</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-jade"><i class="bi bi-check-circle"></i></div>
+    <div>
+      <div class="stat-label">Active</div>
+      <div class="stat-value">{{ active_assets }}</div>
+      <div class="stat-sub">{{ in_maintenance }} in maintenance</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold"><i class="bi bi-clock-history"></i></div>
+    <div>
+      <div class="stat-label">Pending WOs</div>
+      <div class="stat-value">{{ pending_requests }}</div>
+      <div class="stat-sub">{{ approved_requests }} approved</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-rose"><i class="bi bi-exclamation-triangle"></i></div>
+    <div>
+      <div class="stat-label">Overdue</div>
+      <div class="stat-value {% if overdue_count > 0 %}text-rose{% endif %}">{{ overdue_count }}</div>
+      <div class="stat-sub">maintenance needed</div>
+    </div>
+  </div>
+</div>
+
+{% if user.can_see_financials %}
+<div class="grid-2" style="margin-bottom:22px">
+  <div class="card">
+    <div class="card-body" style="display:flex;align-items:center;gap:16px">
+      <div class="stat-icon stat-icon-jade"><i class="bi bi-currency-dollar"></i></div>
+      <div>
+        <div class="stat-label">Fleet Valuation (Current)</div>
+        <div class="stat-value" style="font-size:22px;color:var(--jade)">₱{{ total_valuation|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body" style="display:flex;align-items:center;gap:16px">
+      <div class="stat-icon stat-icon-maroon"><i class="bi bi-bag-check"></i></div>
+      <div>
+        <div class="stat-label">Total Procurement Cost</div>
+        <div class="stat-value" style="font-size:22px;color:var(--maroon)">₱{{ total_procurement|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if user.is_manager and pending_asset_requests %}
+<div class="card" style="margin-bottom:22px">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-box-seam" style="color:var(--gold)"></i> Pending Asset Requests <span style="background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">{{ pending_asset_requests }}</span></div>
+  </div>
+  <div>
+    {% for ar in pending_asset_requests_list %}
+    <div style="display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--border)">
+      <a href="{% url 'asset_request_review' ar.pk %}" style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;text-decoration:none;color:inherit">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,160,23,.12);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:16px;flex-shrink:0"><i class="bi bi-box-seam"></i></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13.5px">{{ ar.name }}</div>
+          <div style="font-size:12px;color:var(--text-muted)">Requested by {{ ar.requested_by }} &middot; {{ ar.created_at|date:"M d, Y" }}</div>
+        </div>
+        <span class="btn btn-outline btn-xs"><i class="bi bi-clipboard-check"></i> Review</span>
+      </a>
+      <a href="{% url 'asset_request_delete' ar.pk %}" title="Delete" style="flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3);font-size:14px">
+        <i class="bi bi-trash3"></i>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-clock-history" style="color:var(--gold)"></i> Recent Work Orders</div>
+      <a href="{% url 'maintenance_list' %}" class="btn btn-outline btn-xs">View all</a>
+    </div>
+    <div>
+      {% for r in recent_requests %}
+      <a href="{% url 'maintenance_detail' r.pk %}" style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);transition:background .1s;text-decoration:none;color:inherit" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span class="wo-tag">{{ r.work_order_number }}</span>
+            <span style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span>
+          </div>
+          <div class="text-muted" style="font-size:12px">{{ r.asset.name }} &middot; {{ r.submitted_by }}</div>
+        </div>
+        <span class="badge badge-{{ r.status }}">{{ r.get_status_display }}</span>
+      </a>
+      {% empty %}
+      <div class="empty-state"><i class="bi bi-inbox"></i><p>No work orders yet</p></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-exclamation-triangle" style="color:var(--rose)"></i> Overdue Maintenance</div>
+      <a href="{% url 'asset_list' %}" class="btn btn-outline btn-xs">View all</a>
+    </div>
+    <div>
+      {% for asset in overdue_assets %}
+      <a href="{% url 'asset_detail' asset.pk %}" style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);transition:background .1s;text-decoration:none;color:inherit" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13.5px;margin-bottom:3px">{{ asset.asset_tag }} — {{ asset.name }}</div>
+          <div class="text-muted" style="font-size:12px">{{ asset.get_asset_type_display }} &middot; {{ asset.department }}</div>
+        </div>
+        <span class="badge badge-overdue">Due {{ asset.next_maintenance_date }}</span>
+      </a>
+      {% empty %}
+      <div class="empty-state"><i class="bi bi-check-circle" style="color:var(--jade);opacity:1"></i><p style="color:var(--jade)">All assets up to date!</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

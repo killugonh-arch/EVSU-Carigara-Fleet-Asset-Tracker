@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Log Mileage{% endblock %}
+{% block page_title %}Log Mileage{% endblock %}
+{% block nav_mileage %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:560px">
+
+<div style="background:rgba(0,180,166,.06);border:1.5px solid rgba(0,180,166,.2);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start">
+  <i class="bi bi-info-circle-fill" style="color:var(--teal);font-size:18px;margin-top:1px;flex-shrink:0"></i>
+  <div>
+    <div style="font-weight:700;font-size:13.5px;color:var(--text);margin-bottom:4px">Why log mileage?</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.65">
+      Mileage logs keep the vehicle's odometer accurate so the system can alert the team when a vehicle approaches its <strong>next service interval</strong>.
+      Accurate records also help plan preventive maintenance, track fuel efficiency, and document trip purposes for audit compliance.
+    </div>
+  </div>
+</div>
+
+{{ vehicles_json|json_script:"vehicles-data" }}
+
+<form method="post" novalidate>
+{% csrf_token %}
+{{ form.odometer }}
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-speedometer" style="color:var(--teal)"></i> Mileage Entry</div>
+  </div>
+  <div class="card-body">
+
+    <div class="form-group" style="position:relative">
+      <label class="form-label">Vehicle *</label>
+      <div style="position:relative">
+        <input
+          id="vehicle-search"
+          type="text"
+          class="form-control"
+          placeholder="Type plate, name, or tag…"
+          autocomplete="off"
+          style="padding-right:32px"
+        >
+        <i class="bi bi-search" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;font-size:14px"></i>
+      </div>
+      <input type="hidden" name="asset" id="vehicle-hidden">
+      <div id="vehicle-dropdown" style="display:none;position:absolute;z-index:200;background:var(--card-bg,#fff);border:1.5px solid var(--border,#ddd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);width:100%;max-height:220px;overflow-y:auto;margin-top:2px"></div>
+      {% if form.asset.errors %}<div class="form-error">{{ form.asset.errors|join:" " }}</div>{% endif %}
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Trip Distance (km)</label>{{ form.trip_km }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>{{ form.log_date }}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Location</label>{{ form.purpose }}
+    </div>
+    <div class="form-group">
+      <label class="form-label">Purpose</label>{{ form.notes }}
+    </div>
+
+  </div>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+  <a href="{% url 'dashboard' %}" class="btn btn-outline">Cancel</a>
+  <button type="submit" class="btn btn-gold"><i class="bi bi-check-lg"></i> Save Log</button>
+</div>
+</form>
+</div>
+
+<script>
+(function () {
+  const VEHICLES = JSON.parse(document.getElementById('vehicles-data').textContent);
+
+  const searchInput = document.getElementById('vehicle-search');
+  const hiddenInput = document.getElementById('vehicle-hidden');
+  const odomInput   = document.getElementById('id_odometer');
+  const dropdown    = document.getElementById('vehicle-dropdown');
+
+  function selectVehicle(v) {
+    searchInput.value = v.name + (v.plate ? ' \u2014 ' + v.plate : '');
+    hiddenInput.value = v.pk;
+    if (odomInput) odomInput.value = v.mileage || 0;
+    dropdown.style.display = 'none';
+  }
+
+  function renderDropdown(matches) {
+    if (!matches.length) { dropdown.style.display = 'none'; return; }
+    dropdown.innerHTML = matches.map(v =>
+      `<div data-pk="${v.pk}" style="padding:9px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--border,#eee);display:flex;gap:10px;align-items:center">
+        <i class="bi bi-truck" style="color:var(--teal);flex-shrink:0"></i>
+        <span><strong>${v.name}</strong>&nbsp;<span style="color:var(--text-muted);font-size:12px">${v.plate}</span></span>
+        <span style="margin-left:auto;font-size:11.5px;color:var(--text-muted)">${v.tag}</span>
+      </div>`
+    ).join('');
+    dropdown.style.display = 'block';
+    dropdown.querySelectorAll('[data-pk]').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectVehicle(VEHICLES.find(x => x.pk == el.dataset.pk));
+      });
+      el.addEventListener('mouseenter', () => el.style.background = 'rgba(0,180,166,.08)');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+    });
+  }
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    hiddenInput.value = '';
+    if (odomInput) odomInput.value = '';
+    if (!q) { dropdown.style.display = 'none'; return; }
+    renderDropdown(
+      VEHICLES.filter(v =>
+        v.name.toLowerCase().includes(q) ||
+        v.plate.toLowerCase().includes(q) ||
+        v.tag.toLowerCase().includes(q)
+      ).slice(0, 8)
+    );
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#vehicle-search') && !e.target.closest('#vehicle-dropdown'))
+      dropdown.style.display = 'none';
+  });
+})();
+</script>
+
+{% endblock %}

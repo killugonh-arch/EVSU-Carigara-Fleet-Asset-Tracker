@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block nav_maintenance %}active{% endblock %}
+{% block extra_style %}
+.wo-badge { font-family: monospace; background: #e9ecef; padding: .2em .6em; border-radius: 4px; font-size: .85rem; }
+.priority-urgent { color: #dc3545; font-weight: 700; }
+.priority-high    { color: #fd7e14; font-weight: 600; }
+.priority-medium  { color: #0d6efd; }
+.priority-low     { color: #6c757d; }
+{% endblock %}
+{% block content %}{% block maintenance_content %}{% endblock %}{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ mr.work_order_number }}{% endblock %}
+{% block page_title %}{{ mr.work_order_number }}{% endblock %}
+{% block nav_maintenance %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'maintenance_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="card-header-icon"><i class="bi bi-clipboard-check" style="color:var(--gold)"></i> Work Order Details</div>
+        <div style="display:flex;gap:6px">
+          <span class="badge badge-{{ mr.priority }}">{{ mr.get_priority_display }}</span>
+          <span class="badge badge-{{ mr.status }}">{{ mr.get_status_display }}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:16px;color:var(--text)">{{ mr.title }}</h2>
+        <div class="detail-grid" style="margin-bottom:16px">
+          <div class="detail-item">
+            <div class="detail-item-label">Asset</div>
+            <div class="detail-item-value"><a href="{% url 'asset_detail' mr.asset.pk %}" style="color:var(--maroon);font-weight:600">{{ mr.asset.asset_tag }}</a> — {{ mr.asset.name }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-item-label">Submitted By</div>
+            <div class="detail-item-value">{{ mr.submitted_by }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-item-label">Request Date</div>
+            <div class="detail-item-value">{{ mr.requested_date }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-item-label">Scheduled Date</div>
+            <div class="detail-item-value">{{ mr.scheduled_date|default:"—" }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-item-label">Completed Date</div>
+            <div class="detail-item-value">{{ mr.completed_date|default:"—" }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-item-label">Vendor</div>
+            <div class="detail-item-value">{{ mr.vendor|default:"—" }}</div>
+          </div>
+          {% if user.can_see_financials %}
+          <div class="detail-item">
+            <div class="detail-item-label">Estimated Cost</div>
+            <div class="detail-item-value mono">{% if mr.estimated_cost %}₱{{ mr.estimated_cost|floatformat:2 }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-item-label">Actual Cost</div>
+            <div class="detail-item-value mono fw-700">{% if mr.actual_cost %}₱{{ mr.actual_cost|floatformat:2 }}{% else %}—{% endif %}</div>
+          </div>
+          {% endif %}
+        </div>
+        <div style="padding-top:14px;border-top:1px solid var(--border)">
+          <div class="detail-item-label" style="margin-bottom:8px">Description</div>
+          <p style="font-size:13.5px;color:var(--text);line-height:1.7">{{ mr.description }}</p>
+        </div>
+        {% if mr.notes %}
+        <div style="padding-top:14px;margin-top:12px;border-top:1px solid var(--border)">
+          <div class="detail-item-label" style="margin-bottom:8px">Notes</div>
+          <p style="font-size:13.5px;color:var(--text-muted);line-height:1.7">{{ mr.notes }}</p>
+        </div>
+        {% endif %}
+        {% if mr.approved_by %}
+        <div style="padding-top:14px;margin-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px;color:var(--jade)">
+          <i class="bi bi-shield-check-fill"></i> Approved by <strong>{{ mr.approved_by }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  
+  {% if user.is_manager and mr.status != 'completed' and mr.status != 'rejected' %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-shield-check" style="color:var(--jade)"></i> Manager Actions</div>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'maintenance_approve' mr.pk %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Scheduled Date</label>
+          {{ approval_form.scheduled_date }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vendor</label>
+          {{ approval_form.vendor }}
+        </div>
+        {% if user.can_see_financials %}
+        <div class="form-group">
+          <label class="form-label">Actual Cost (₱)</label>
+          {{ approval_form.actual_cost }}
+        </div>
+        {% endif %}
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          {{ approval_form.notes }}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          {% if mr.status == 'pending' %}
+          <button type="submit" name="action" value="approved" class="btn btn-primary btn-sm"><i class="bi bi-check-lg"></i> Approve</button>
+          <button type="submit" name="action" value="rejected" class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i> Reject</button>
+          {% elif mr.status == 'approved' %}
+          <button type="submit" name="action" value="in_progress" class="btn btn-primary btn-sm"><i class="bi bi-play-fill"></i> Start Work</button>
+          {% elif mr.status == 'in_progress' %}
+          <button type="submit" name="action" value="completed" class="btn btn-primary btn-sm" style="background:var(--jade)"><i class="bi bi-check-circle-fill"></i> Mark Complete</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% if not user.is_auditor %}
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+  {% if user.is_manager or mr.submitted_by == request.user %}
+  <a href="{% url 'maintenance_edit' mr.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit Work Order</a>
+  {% endif %}
+  {% if user.is_manager or mr.submitted_by == request.user %}
+  <form method="post" action="{% url 'maintenance_delete' mr.pk %}"
+        onsubmit="return confirm('Delete work order {{ mr.work_order_number|escapejs }}?\nThis cannot be undone.')">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:rgba(231,76,60,.12);color:#e74c3c;border:1px solid rgba(231,76,60,.35);font-weight:600">
+      <i class="bi bi-trash3"></i> Delete
+    </button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

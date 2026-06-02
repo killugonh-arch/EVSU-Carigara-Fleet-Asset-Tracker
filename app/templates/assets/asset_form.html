@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block nav_assets %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% if asset %}{% url 'asset_detail' asset.pk %}{% else %}{% url 'asset_list' %}{% endif %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:860px">
+<form method="post" novalidate>
+{% csrf_token %}
+
+<!-- ── Basic Information ─────────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-truck" style="color:var(--maroon)"></i> Basic Information</div>
+    {% if asset %}
+    <span style="font-size:11px;background:rgba(122,8,38,.08);color:var(--maroon);padding:3px 10px;border-radius:5px;font-weight:600;letter-spacing:.4px">
+      Asset Tag: {{ asset.asset_tag }}
+    </span>
+    {% else %}
+    <span style="font-size:11px;color:var(--text-muted);font-style:italic">Asset tag will be auto-generated on save</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <div class="grid-3">
+      <div class="form-group">
+        <label class="form-label">Asset Type *</label>
+        {{ form.asset_type }}
+        {% if form.asset_type.errors %}<div class="form-error">{{ form.asset_type.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Asset Name *</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="form-error">{{ form.name.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        {{ form.status }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Model</label>{{ form.model_name }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year</label>{{ form.year }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>{{ form.department }}
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:4px">
+      <label class="form-label">Description</label>
+      {{ form.notes }}
+      {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors|join:" " }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Vehicle Details ──────────────────────────────────────────────── -->
+<div class="card" style="margin-top:16px">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-truck-front" style="color:var(--teal)"></i> Vehicle Details</div>
+    <span class="text-muted" style="font-size:12px">For vehicle-type assets only</span>
+  </div>
+  <div class="card-body">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">License Plate</label>{{ form.license_plate }}</div>
+      <div class="form-group">
+        <label class="form-label">Fuel Type</label>{{ form.fuel_type }}</div>
+      <div class="form-group">
+        <label class="form-label">Current Mileage (km)</label>{{ form.mileage }}</div>
+      <div class="form-group">
+        <label class="form-label">Next Service at (km)</label>{{ form.next_service_km }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Maintenance Schedule ─────────────────────────────────────────── -->
+<div class="card" style="margin-top:16px">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-calendar3" style="color:var(--gold)"></i> Maintenance Schedule</div>
+  </div>
+  <div class="card-body">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">First Maintenance Date</label>
+        {{ form.first_maintenance_date }}
+        <div class="form-hint">Initial scheduled maintenance date for this asset</div>
+        {% if form.first_maintenance_date.errors %}<div class="form-error">{{ form.first_maintenance_date.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Maintenance Frequency</label>
+        {{ form.maintenance_frequency }}
+        <div class="form-hint">How often recurring maintenance should occur</div>
+        {% if form.maintenance_frequency.errors %}<div class="form-error">{{ form.maintenance_frequency.errors|join:" " }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Financial Information ────────────────────────────────────────── -->
+<div class="card" style="margin-top:16px">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-currency-dollar" style="color:var(--jade)"></i> Financial Information</div>
+    <span style="font-size:11px;background:rgba(39,174,114,.1);color:var(--jade);padding:3px 8px;border-radius:5px;font-weight:600">Manager Only</span>
+  </div>
+  <div class="card-body">
+    <div class="grid-3">
+      <div class="form-group">
+        <label class="form-label">Procurement Cost (₱)</label>{{ form.procurement_cost }}</div>
+      <div class="form-group">
+        <label class="form-label">Current Value (₱)</label>{{ form.current_value }}</div>
+      <div class="form-group">
+        <label class="form-label">Procurement Date</label>{{ form.procurement_date }}</div>
+    </div>
+  </div>
+</div>
+
+
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+  <a href="{% url 'asset_list' %}" class="btn btn-outline">Cancel</a>
+  <button type="submit" class="btn btn-gold"><i class="bi bi-check-lg"></i> {% if asset %}Save Changes{% else %}Create Asset{% endif %}</button>
+</div>
+</form>
+</div>
+{% endblock %}

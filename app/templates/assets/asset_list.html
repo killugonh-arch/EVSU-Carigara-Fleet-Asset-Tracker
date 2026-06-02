@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Fleet Assets{% endblock %}
+{% block page_title %}Fleet Assets{% endblock %}
+{% block nav_assets %}active{% endblock %}
+
+{% block topbar_actions %}
+
+{% endblock %}
+
+{% block content %}
+
+<form method="get" id="filterForm">
+<div class="filter-bar">
+  <div class="filter-field">
+    <label class="filter-label">Search</label>
+    {{ filter.form.name }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">Type</label>
+    {{ filter.form.asset_type }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">Status</label>
+    {{ filter.form.status }}
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">Department</label>
+    {{ filter.form.department }}
+  </div>
+  <div style="display:flex;gap:8px;align-items:flex-end;margin-top:auto">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filter</button>
+    <a href="{% url 'asset_list' %}" class="btn btn-outline btn-sm">Clear</a>
+  </div>
+</div>
+</form>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon"><i class="bi bi-list-ul" style="color:var(--maroon)"></i> {{ assets.paginator.count }} Asset{{ assets.paginator.count|pluralize }}</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      {% if user.is_manager %}
+      <a href="{% url 'asset_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> Add Asset</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Asset Tag</th>
+        <th>Name / Model</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Department</th>
+        <th>Mileage</th>
+        <th>Next Service</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in assets %}
+      <tr>
+        <td><span class="wo-tag">{{ asset.asset_tag }}</span></td>
+        <td>
+          <div class="fw-600" style="font-size:13.5px">{{ asset.name }}</div>
+          {% if asset.make %}<div class="text-muted" style="font-size:12px">{{ asset.make }} {{ asset.model_name }} {% if asset.year %}({{ asset.year }}){% endif %}</div>{% endif %}
+        </td>
+        <td>{{ asset.get_asset_type_display }}</td>
+        <td><span class="badge badge-{{ asset.status }}">{{ asset.get_status_display }}</span></td>
+        <td>{{ asset.department|default:"—" }}</td>
+        <td class="mono" style="font-size:13px">
+          {% if asset.asset_type == 'vehicle' %}{{ asset.mileage|floatformat:0 }} km{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if asset.next_maintenance_date %}
+            <span class="badge {% if asset.maintenance_overdue %}badge-overdue{% else %}badge-approved{% endif %}">
+              {{ asset.next_maintenance_date }}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="white-space:nowrap">
+          <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-outline btn-xs" title="View"><i class="bi bi-eye"></i></a>
+          {% if user.is_manager %}
+          <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-outline btn-xs" style="margin-left:4px" title="Edit"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'asset_delete' asset.pk %}" style="display:inline;margin-left:4px"
+                onsubmit="return confirm('Delete asset {{ asset.asset_tag|escapejs }} — {{ asset.name|escapejs }}?\nThis cannot be undone.')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs" title="Delete asset"
+                    style="background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8"><div class="empty-state"><i class="bi bi-truck"></i><p>No assets found. Try adjusting filters.</p></div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if assets.has_other_pages %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+  <div class="text-muted" style="font-size:13px">
+    Page {{ assets.number }} of {{ assets.paginator.num_pages }} — {{ assets.paginator.count }} total
+  </div>
+  <nav class="pagination">
+    {% if assets.has_previous %}
+    <a href="?{{ query_string }}&page={{ assets.previous_page_number }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+    {% else %}<span class="page-btn disabled"><i class="bi bi-chevron-left"></i></span>{% endif %}
+
+    {% for num in assets.paginator.page_range %}
+      {% if assets.number == num %}
+        <span class="page-btn active">{{ num }}</span>
+      {% elif num > assets.number|add:"-3" and num < assets.number|add:"3" %}
+        <a href="?{{ query_string }}&page={{ num }}" class="page-btn">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if assets.has_next %}
+    <a href="?{{ query_string }}&page={{ assets.next_page_number }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+    {% else %}<span class="page-btn disabled"><i class="bi bi-chevron-right"></i></span>{% endif %}
+  </nav>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Asset Requests{% endblock %}
+{% block page_title %}Asset Requests{% endblock %}
+{% block nav_asset_requests %}active{% endblock %}
+
+{% block topbar_actions %}
+{% if not user.is_auditor and not user.is_manager and not user.is_superuser %}
+<a href="{% url 'asset_request_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> Request New Asset</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if user.is_manager or user.is_auditor %}
+{# ── ADMIN / MANAGER VIEW ── #}
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+  <a href="{% url 'asset_request_list' %}" class="filter-tab {% if not status_filter %}active{% endif %}">
+    All <span class="filter-count">{{ counts.all }}</span>
+  </a>
+  <a href="?status=pending" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">
+    Pending <span class="filter-count pending">{{ counts.pending }}</span>
+  </a>
+  <a href="?status=approved" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">
+    Approved <span class="filter-count approved">{{ counts.approved }}</span>
+  </a>
+  <a href="?status=rejected" class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">
+    Rejected <span class="filter-count rejected">{{ counts.rejected }}</span>
+  </a>
+</div>
+
+<style>
+.filter-tab {
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--text-muted);border:1.5px solid var(--border);background:var(--surface);
+  transition:all .15s;cursor:pointer;
+}
+.filter-tab:hover { border-color:var(--maroon);color:var(--maroon); }
+.filter-tab.active { background:var(--maroon);color:#fff;border-color:var(--maroon); }
+.filter-count {
+  font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;
+  background:rgba(0,0,0,.08);color:inherit;
+}
+.filter-count.pending  { background:rgba(212,160,23,.18);color:#b8860b; }
+.filter-count.approved { background:rgba(39,174,114,.15);color:#1a7a4a; }
+.filter-count.rejected { background:rgba(231,76,60,.12);color:#c0392b; }
+.filter-tab.active .filter-count { background:rgba(255,255,255,.2);color:#fff; }
+</style>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-box-seam" style="color:var(--gold)"></i>
+      All Asset Requests
+      {% if counts.pending %}<span style="margin-left:8px;background:var(--rose);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px">{{ counts.pending }} pending</span>{% endif %}
+    </div>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Asset Name</th>
+        <th>Type</th>
+        <th>Requested By</th>
+        <th>Est. Cost</th>
+        <th>Submitted</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in requests %}
+      {% if r.status == 'pending' %}<tr style="background:rgba(212,160,23,.03)">{% else %}<tr>{% endif %}
+        <td class="mono" style="font-size:12px;color:var(--text-muted)">#{{ r.pk }}</td>
+        <td>
+          <div class="fw-600" style="font-size:13.5px">{{ r.name }}</div>
+          {% if r.make %}<div class="text-muted" style="font-size:12px">{{ r.make }} {{ r.model_name }}</div>{% endif %}
+        </td>
+        <td style="font-size:13px">{{ r.get_asset_type_display }}</td>
+        <td>
+          <div style="font-size:13px;font-weight:500">{{ r.requested_by.get_full_name|default:r.requested_by }}</div>
+          {% if r.requested_by.department %}<div style="font-size:11.5px;color:var(--text-muted)">{{ r.requested_by.department }}</div>{% endif %}
+        </td>
+        <td style="font-size:13px;font-family:var(--font-mono,monospace)">
+          {% if r.estimated_cost %}₱{{ r.estimated_cost|floatformat:2 }}{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}
+        </td>
+        <td style="font-size:13px;color:var(--text-muted)">{{ r.created_at|date:"M d, Y" }}</td>
+        <td>
+          <span class="badge badge-{{ r.status }}">{{ r.get_status_display }}</span>
+        </td>
+        <td style="white-space:nowrap">
+          {% if user.is_manager and r.status == 'pending' %}
+          <a href="{% url 'asset_request_review' r.pk %}" class="btn btn-gold btn-xs">
+            <i class="bi bi-clipboard-check"></i> Review
+          </a>
+          {% else %}
+          <a href="{% url 'asset_request_review' r.pk %}" class="btn btn-outline btn-xs">
+            <i class="bi bi-eye"></i> View
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8">
+          <div class="empty-state">
+            <i class="bi bi-box-seam"></i>
+            <p>No asset requests{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+{# ── STAFF VIEW ── #}
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-box-seam" style="color:var(--gold)"></i> My Asset Requests
+    </div>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Asset Name</th>
+        <th>Type</th>
+        <th>Submitted</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in requests %}
+      <tr>
+        <td class="mono" style="font-size:12px;color:var(--text-muted)">#{{ r.pk }}</td>
+        <td>
+          <div class="fw-600" style="font-size:13.5px">{{ r.name }}</div>
+          {% if r.make %}<div class="text-muted" style="font-size:12px">{{ r.make }} {{ r.model_name }}</div>{% endif %}
+        </td>
+        <td>{{ r.get_asset_type_display }}</td>
+        <td style="font-size:13px">{{ r.created_at|date:"M d, Y" }}</td>
+        <td>
+          <span class="badge badge-{{ r.status }}">{{ r.get_status_display }}</span>
+        </td>
+        <td style="white-space:nowrap">
+          <a href="{% url 'asset_request_review' r.pk %}" class="btn btn-outline btn-xs"><i class="bi bi-eye"></i> View</a>
+          {% if r.status == 'pending' %}
+          <form method="post" action="{% url 'asset_request_delete' r.pk %}" style="display:inline;margin-left:4px"
+                onsubmit="return confirm('Delete asset request #{{ r.pk }} — {{ r.name|escapejs }}?\nThis cannot be undone.')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs" style="background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)" title="Delete">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6">
+          <div class="empty-state">
+            <i class="bi bi-box-seam"></i>
+            <p>No asset requests yet. <a href="{% url 'asset_request_create' %}" style="color:var(--maroon);font-weight:600">Submit one now.</a></p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
