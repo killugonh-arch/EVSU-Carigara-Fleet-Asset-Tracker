@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}My Notifications{% endblock %}
+{% block page_title %}My Notifications{% endblock %}
+{% block nav_ar_notifs %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-bell" style="color:var(--maroon)"></i> Asset Request Notifications
+    </div>
+    <a href="{% url 'asset_request_list' %}" class="btn btn-outline btn-xs">
+      <i class="bi bi-box-seam"></i> My Requests
+    </a>
+  </div>
+
+  {% if notifs %}
+  <div>
+    {% for n in notifs %}
+
+    {% if n.asset_request.status == 'approved' %}
+    <div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:rgba(39,174,114,.06)">
+      <div style="width:38px;height:38px;border-radius:9px;background:rgba(39,174,114,.1);border:1.5px solid rgba(39,174,114,.25);display:flex;align-items:center;justify-content:center;color:var(--jade);font-size:18px;flex-shrink:0;margin-top:2px">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;line-height:1.65;color:var(--text)">{{ n.message }}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:10px">
+          <span><i class="bi bi-clock" style="margin-right:3px"></i>{{ n.created_at|date:"M d, Y g:i A" }}</span>
+          <a href="{% url 'asset_request_review' n.asset_request.pk %}" style="color:var(--jade);font-weight:600">View Request →</a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:rgba(231,76,60,.05)">
+      <div style="width:38px;height:38px;border-radius:9px;background:rgba(231,76,60,.1);border:1.5px solid rgba(231,76,60,.2);display:flex;align-items:center;justify-content:center;color:#e74c3c;font-size:18px;flex-shrink:0;margin-top:2px">
+        <i class="bi bi-x-circle-fill"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;line-height:1.65;color:var(--text)">{{ n.message }}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:10px">
+          <span><i class="bi bi-clock" style="margin-right:3px"></i>{{ n.created_at|date:"M d, Y g:i A" }}</span>
+          <a href="{% url 'asset_request_review' n.asset_request.pk %}" style="color:var(--maroon);font-weight:600">View Request →</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-bell-slash" style="color:var(--text-muted)"></i>
+    <p style="color:var(--text-muted)">No notifications yet. You'll be notified here when a manager reviews your asset requests.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
