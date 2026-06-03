@@ -391,6 +391,14 @@
       <span class="nav-badge">{{ pending_nav_count }}</span>
       {% endif %}
     </a>
+    {% if user.is_staff_role and not user.is_manager and not user.is_superuser %}
+    <a class="nav-link {% block nav_ar_notifs %}{% endblock %}" href="{% url 'asset_request_notifications' %}">
+      <i class="bi bi-bell"></i> My Notifications
+      {% if asset_request_notif_count %}
+      <span class="nav-badge">{{ asset_request_notif_count }}</span>
+      {% endif %}
+    </a>
+    {% endif %}
     {% if not user.is_auditor %}
     <a class="nav-link {% block nav_mileage %}{% endblock %}" href="{% url 'mileage_log' %}">
       <i class="bi bi-speedometer"></i> Log Mileage

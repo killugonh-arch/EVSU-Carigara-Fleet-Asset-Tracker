@@ -76,7 +76,7 @@
   </div>
 
   
-  {% if user.is_manager and mr.status != 'completed' and mr.status != 'rejected' %}
+  {% if user.is_manager and mr.status == 'pending' %}
   <div class="card">
     <div class="card-header">
       <div class="card-header-icon"><i class="bi bi-shield-check" style="color:var(--jade)"></i> Manager Actions</div>
@@ -103,24 +103,95 @@
           {{ approval_form.notes }}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-          {% if mr.status == 'pending' %}
           <button type="submit" name="action" value="approved" class="btn btn-primary btn-sm"><i class="bi bi-check-lg"></i> Approve</button>
           <button type="submit" name="action" value="rejected" class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i> Reject</button>
-          {% elif mr.status == 'approved' %}
-          <button type="submit" name="action" value="in_progress" class="btn btn-primary btn-sm"><i class="bi bi-play-fill"></i> Start Work</button>
-          {% elif mr.status == 'in_progress' %}
-          <button type="submit" name="action" value="completed" class="btn btn-primary btn-sm" style="background:var(--jade)"><i class="bi bi-check-circle-fill"></i> Mark Complete</button>
-          {% endif %}
         </div>
       </form>
+    </div>
+  </div>
+  {% elif user.is_maintenance and mr.status == 'approved' %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-wrench-adjustable" style="color:var(--jade)"></i> Technician Actions</div>
+    </div>
+    <div class="card-body">
+      <div style="background:rgba(39,174,114,.07);border:1.5px solid rgba(39,174,114,.25);border-radius:10px;padding:13px 16px;margin-bottom:20px;font-size:13px;color:#1a6644;line-height:1.55">
+        <i class="bi bi-info-circle-fill" style="margin-right:6px"></i>
+        This work order has been <strong>approved</strong> by the manager.
+        Accept to begin work — the asset will be set to <strong>In Maintenance</strong>.
+        On Hold to defer — the asset will remain <strong>On Hold</strong>.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <form method="post" action="{% url 'maintenance_accept' mr.pk %}" onsubmit="return confirm('Accept this work order? Asset will be set to In Maintenance.')">
+          {% csrf_token %}
+          <button type="submit" style="width:100%;background:var(--jade);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer">
+            <i class="bi bi-play-circle-fill"></i> Accept & Start Work
+          </button>
+        </form>
+        <form method="post" action="{% url 'maintenance_hold' mr.pk %}" onsubmit="return confirm('Put this work order on hold? Asset will remain On Hold.')">
+          {% csrf_token %}
+          <button type="submit" style="width:100%;background:rgba(212,160,23,.1);color:#8a5a00;border:1.5px solid rgba(212,160,23,.4);border-radius:9px;padding:12px 20px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer">
+            <i class="bi bi-pause-circle-fill"></i> On Hold
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% elif user.is_maintenance and mr.status == 'in_progress' %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-wrench-adjustable" style="color:var(--jade)"></i> Technician Actions</div>
+    </div>
+    <div class="card-body">
+      <div style="background:rgba(59,130,246,.07);border:1.5px solid rgba(59,130,246,.25);border-radius:10px;padding:13px 16px;margin-bottom:20px;font-size:13px;color:#1e40af;line-height:1.55">
+        <i class="bi bi-tools" style="margin-right:6px"></i>
+        This work order is currently <strong>In Progress</strong>. Mark it complete when the work is done — the asset will be returned to <strong>Available</strong>.
+      </div>
+      <form method="post" action="{% url 'maintenance_complete' mr.pk %}" onsubmit="return confirm('Mark work order {{ mr.work_order_number|escapejs }} as Completed?')">
+        {% csrf_token %}
+        <button type="submit" style="width:100%;background:var(--jade);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer">
+          <i class="bi bi-check-circle-fill"></i> Mark as Complete
+        </button>
+      </form>
+    </div>
+  </div>
+  {% elif user.is_maintenance %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon"><i class="bi bi-info-circle" style="color:var(--gold)"></i> Work Order Status</div>
+    </div>
+    <div class="card-body">
+      {% if mr.status == 'pending' %}
+      <div style="background:rgba(212,160,23,.08);border:1.5px solid rgba(212,160,23,.3);border-radius:10px;padding:14px 16px;font-size:13.5px;color:#8a5a00;line-height:1.6">
+        <i class="bi bi-clock-history" style="margin-right:6px"></i>
+        This work order is <strong>pending manager approval</strong>. No action required yet.
+      </div>
+      {% elif mr.status == 'in_progress' %}
+      <div style="background:rgba(59,130,246,.07);border:1.5px solid rgba(59,130,246,.25);border-radius:10px;padding:14px 16px;font-size:13.5px;color:#1e40af;line-height:1.6">
+        <i class="bi bi-tools" style="margin-right:6px"></i>
+        This work order is currently <strong>In Progress</strong>.
+      </div>
+      {% elif mr.status == 'completed' %}
+      <div style="background:rgba(39,174,114,.07);border:1.5px solid rgba(39,174,114,.25);border-radius:10px;padding:14px 16px;font-size:13.5px;color:#1a6644;line-height:1.6">
+        <i class="bi bi-check-circle-fill" style="margin-right:6px"></i>
+        This work order has been <strong>completed</strong>.
+      </div>
+      {% elif mr.status == 'rejected' %}
+      <div style="background:rgba(231,76,60,.06);border:1.5px solid rgba(231,76,60,.2);border-radius:10px;padding:14px 16px;font-size:13.5px;color:#8b0000;line-height:1.6">
+        <i class="bi bi-x-circle-fill" style="margin-right:6px"></i>
+        This work order was <strong>declined</strong>.
+      </div>
+      {% endif %}
     </div>
   </div>
   {% endif %}
 </div>
 {% if not user.is_auditor %}
 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+  {% if not user.is_maintenance %}
   {% if user.is_manager or mr.submitted_by == request.user %}
   <a href="{% url 'maintenance_edit' mr.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit Work Order</a>
+  {% endif %}
   {% endif %}
   {% if user.is_manager or mr.submitted_by == request.user %}
   <form method="post" action="{% url 'maintenance_delete' mr.pk %}"

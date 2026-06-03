@@ -8,7 +8,8 @@ from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
 from django.http import JsonResponse
 
 from .models import (Asset, MaintenanceRequest, MileageLog, AssetRequest,
-                     AssetRequestStatus, MaintenanceNotification)
+                     AssetRequestStatus, MaintenanceNotification,
+                     AssetRequestNotification)
 from .models import AssetType, AssetStatus, MaintenanceStatus
 from .forms import (AssetForm, MaintenanceRequestForm, MaintenanceApprovalForm,
                     MileageLogForm, AssetRequestForm, AssetRequestReviewForm)
@@ -29,45 +30,26 @@ PRIORITY_RANK = Case(
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
-def _sync_asset_status(asset):
-    open_statuses = [
-        MaintenanceStatus.IN_PROGRESS,
-        MaintenanceStatus.APPROVED,
-        MaintenanceStatus.PENDING,
-    ]
-    has_open = asset.maintenance_requests.filter(status__in=open_statuses).exists()
-    if has_open:
-        if asset.status != AssetStatus.MAINTENANCE:
-            Asset.objects.filter(pk=asset.pk).update(status=AssetStatus.MAINTENANCE)
-    else:
-        if asset.status == AssetStatus.MAINTENANCE:
-            Asset.objects.filter(pk=asset.pk).update(status=AssetStatus.AVAILABLE)
-
-
-def _broadcast_notification(mr, new_status):
-    """
-    Send a MaintenanceNotification to all active Maintenance Technician users
-    whenever a work-order changes to an actionable status.
-    """
+def _notify_technicians(mr, msg):
+    """Send a MaintenanceNotification to all active Maintenance Technicians."""
     from accounts.models import User
-    technicians = User.objects.filter(role='maintenance', is_active=True)
-    if not technicians.exists():
-        return
-
-    status_messages = {
-        'approved':    f'Work order {mr.work_order_number} for [{mr.asset.asset_tag}] {mr.asset.name} has been APPROVED. Please proceed with scheduling.',
-        'in_progress': f'Work order {mr.work_order_number} for [{mr.asset.asset_tag}] {mr.asset.name} is now IN PROGRESS.',
-        'completed':   f'Work order {mr.work_order_number} for [{mr.asset.asset_tag}] {mr.asset.name} has been marked COMPLETED.',
-        'rejected':    f'Work order {mr.work_order_number} for [{mr.asset.asset_tag}] {mr.asset.name} has been REJECTED by the manager.',
-    }
-    msg = status_messages.get(new_status)
-    if not msg:
-        return
-
-    for tech in technicians:
+    for tech in User.objects.filter(role='maintenance', is_active=True):
         MaintenanceNotification.objects.create(
             maintenance_request=mr,
             recipient=tech,
+            message=msg,
+        )
+
+
+def _notify_managers(mr, msg):
+    """Send a MaintenanceNotification to all active Managers.
+    limit_choices_to on the model FK is advisory only — no DB constraint.
+    """
+    from accounts.models import User
+    for manager in User.objects.filter(role='manager', is_active=True):
+        MaintenanceNotification.objects.create(
+            maintenance_request=mr,
+            recipient=manager,
             message=msg,
         )
 
@@ -168,6 +150,11 @@ def maintenance_portal(request):
         status__in=[MaintenanceStatus.APPROVED, MaintenanceStatus.IN_PROGRESS]
     ).select_related('asset', 'submitted_by').annotate(priority_rank=PRIORITY_RANK).order_by('priority_rank', 'created_at')
 
+    # Pending review — shown as urgent alert banner on portal
+    pending_review = MaintenanceRequest.objects.filter(
+        status=MaintenanceStatus.PENDING
+    ).select_related('asset', 'submitted_by').annotate(priority_rank=PRIORITY_RANK).order_by('priority_rank', 'created_at')
+
     # Recently completed
     completed_wos = MaintenanceRequest.objects.filter(
         status=MaintenanceStatus.COMPLETED
@@ -181,6 +168,8 @@ def maintenance_portal(request):
         'today':         today,
         'approved_count':    active_wos.filter(status=MaintenanceStatus.APPROVED).count(),
         'in_progress_count': active_wos.filter(status=MaintenanceStatus.IN_PROGRESS).count(),
+        'pending_review':       pending_review,
+        'pending_review_count': pending_review.count(),
     }
     return render(request, 'assets/maintenance_portal.html', context)
 
@@ -357,7 +346,7 @@ def maintenance_create(request):
             from django.utils import timezone as _tz
             mr.title = f'{mr.asset.name} – {_tz.localdate().strftime("%b %d, %Y")}'
         mr.save()
-        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.MAINTENANCE)
+        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.ON_HOLD)
         audit.info(f'MR_CREATED by={request.user.username} wo={mr.work_order_number} asset={mr.asset.asset_tag}')
         from django.urls import reverse
         detail_url = reverse('maintenance_detail', args=[mr.pk])
@@ -422,34 +411,191 @@ def maintenance_detail(request, pk):
         audit.warning(f'IDOR_ATTEMPT by={request.user.username} tried MR pk={pk}')
         messages.error(request, 'You may only view your own requests.')
         return redirect('maintenance_list')
-    approval_form = MaintenanceApprovalForm(instance=mr) if request.user.is_manager else None
+    approval_form = MaintenanceApprovalForm(instance=mr) if (request.user.is_manager and mr.status == MaintenanceStatus.PENDING) else None
     return render(request, 'assets/maintenance_detail.html', {'mr': mr, 'approval_form': approval_form})
 
 
 @login_required
 def maintenance_approve(request, pk):
+    """
+    Manager approves or rejects a pending work order.
+    approve → status APPROVED, asset stays ON_HOLD, notify technicians
+    reject  → status REJECTED, asset → AVAILABLE
+    """
     if not request.user.is_manager:
         messages.error(request, 'Only managers can approve work orders.')
         return redirect('maintenance_detail', pk=pk)
-    mr   = get_object_or_404(MaintenanceRequest, pk=pk)
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.PENDING:
+        messages.error(request, 'Only pending work orders can be approved or rejected.')
+        return redirect('maintenance_detail', pk=pk)
     form = MaintenanceApprovalForm(request.POST, instance=mr)
     if form.is_valid():
-        mr             = form.save(commit=False)
-        new_status     = request.POST.get('action', 'approved')
-        mr.status      = new_status
+        mr         = form.save(commit=False)
+        action     = request.POST.get('action', 'approved')
+        if action not in (MaintenanceStatus.APPROVED, MaintenanceStatus.REJECTED):
+            messages.error(request, 'Invalid action.')
+            return redirect('maintenance_detail', pk=pk)
+        mr.status      = action
         mr.approved_by = request.user
-        if mr.status == MaintenanceStatus.COMPLETED:
-            mr.completed_date = timezone.now().date()
-            Asset.objects.filter(pk=mr.asset_id).update(last_maintenance_date=mr.completed_date)
         mr.save()
-        _sync_asset_status(mr.asset)
-
-        # ── Broadcast notification to all Maintenance Technicians ──
-        _broadcast_notification(mr, new_status)
-
-        audit.info(f'MR_STATUS_CHANGE by={request.user.username} wo={mr.work_order_number} status={mr.status}')
+        if action == MaintenanceStatus.APPROVED:
+            # Asset stays ON_HOLD until technician accepts
+            Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.ON_HOLD)
+            _notify_technicians(
+                mr,
+                f'Work order {mr.work_order_number} for [{mr.asset.asset_tag}] {mr.asset.name} '
+                f'has been APPROVED. Please accept or hold.'
+            )
+        else:
+            # Rejected — return asset to available
+            Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.AVAILABLE)
+        audit.info(f'MR_MANAGER_ACTION by={request.user.username} wo={mr.work_order_number} status={mr.status}')
         messages.success(request, f'Work order {mr.work_order_number} updated to "{mr.get_status_display()}".')
     return redirect('maintenance_detail', pk=pk)
+
+
+# ─── technician actions ───────────────────────────────────────────────────────
+
+@login_required
+def maintenance_accept(request, pk):
+    """
+    Technician accepts an APPROVED work order.
+    → status IN_PROGRESS, asset → MAINTENANCE
+    """
+    if not request.user.is_maintenance:
+        messages.error(request, 'Only maintenance technicians can accept work orders.')
+        return redirect('maintenance_detail', pk=pk)
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.APPROVED:
+        messages.error(request, 'Only approved work orders can be accepted.')
+        return redirect('maintenance_detail', pk=pk)
+    if request.method == 'POST':
+        mr.status = MaintenanceStatus.IN_PROGRESS
+        mr.save()
+        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.MAINTENANCE)
+        audit.info(f'MR_ACCEPTED by={request.user.username} wo={mr.work_order_number}')
+        messages.success(request, f'Work order {mr.work_order_number} accepted — asset is now In Maintenance.')
+    return redirect('maintenance_detail', pk=pk)
+
+
+@login_required
+def maintenance_hold(request, pk):
+    """
+    Technician puts an APPROVED work order on hold (cannot do it right now).
+    → status stays APPROVED, asset stays ON_HOLD
+    """
+    if not request.user.is_maintenance:
+        messages.error(request, 'Only maintenance technicians can put work orders on hold.')
+        return redirect('maintenance_detail', pk=pk)
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.APPROVED:
+        messages.error(request, 'Only approved work orders can be put on hold.')
+        return redirect('maintenance_detail', pk=pk)
+    if request.method == 'POST':
+        # Status stays APPROVED; asset stays ON_HOLD — no change needed, just log it
+        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.ON_HOLD)
+        audit.info(f'MR_HELD by={request.user.username} wo={mr.work_order_number}')
+        messages.success(request, f'Work order {mr.work_order_number} held — asset remains On Hold.')
+    return redirect('maintenance_detail', pk=pk)
+
+
+@login_required
+def maintenance_complete(request, pk):
+    """
+    Technician marks an IN_PROGRESS work order as completed.
+    → status COMPLETED, asset → AVAILABLE, notify managers
+    """
+    if not request.user.is_maintenance:
+        messages.error(request, 'Only maintenance technicians can mark work orders complete.')
+        return redirect('maintenance_detail', pk=pk)
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.IN_PROGRESS:
+        messages.error(request, 'Only in-progress work orders can be marked complete.')
+        return redirect('maintenance_detail', pk=pk)
+    if request.method == 'POST':
+        mr.status         = MaintenanceStatus.COMPLETED
+        mr.completed_date = timezone.now().date()
+        mr.save()
+        Asset.objects.filter(pk=mr.asset_id).update(
+            status=AssetStatus.AVAILABLE,
+            last_maintenance_date=mr.completed_date,
+        )
+        tech_name = request.user.get_full_name() or request.user.username
+        _notify_managers(
+            mr,
+            f'Work order {mr.work_order_number} for [{mr.asset.asset_tag}] {mr.asset.name} '
+            f'has been marked COMPLETED by technician {tech_name}. Asset is now Available.'
+        )
+        audit.info(f'MR_COMPLETED by={request.user.username} wo={mr.work_order_number}')
+        messages.success(request, f'Work order {mr.work_order_number} completed — asset returned to Available.')
+    return redirect('maintenance_detail', pk=pk)
+
+
+@login_required
+def maintenance_take(request, pk):
+    """
+    Technician accepts a PENDING work order directly (before manager approval).
+    → status IN_PROGRESS, asset → MAINTENANCE
+    """
+    if not request.user.is_maintenance:
+        messages.error(request, 'Only maintenance technicians can take work orders.')
+        return redirect('maintenance_portal')
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.PENDING:
+        messages.error(request, 'Only pending work orders can be taken.')
+        return redirect('maintenance_portal')
+    if request.method == 'POST':
+        mr.status = MaintenanceStatus.IN_PROGRESS
+        mr.save()
+        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.MAINTENANCE)
+        audit.info(f'MR_TAKEN by={request.user.username} wo={mr.work_order_number}')
+        messages.success(request, f'Work order {mr.work_order_number} accepted — asset is now In Maintenance.')
+    return redirect('maintenance_portal')
+
+
+@login_required
+def maintenance_pass(request, pk):
+    """
+    Technician rejects a PENDING work order.
+    → status REJECTED, asset → ON_HOLD
+    """
+    if not request.user.is_maintenance:
+        messages.error(request, 'Only maintenance technicians can reject work orders.')
+        return redirect('maintenance_portal')
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.PENDING:
+        messages.error(request, 'Only pending work orders can be rejected.')
+        return redirect('maintenance_portal')
+    if request.method == 'POST':
+        mr.status = MaintenanceStatus.REJECTED
+        mr.save()
+        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.ON_HOLD)
+        audit.info(f'MR_PASSED by={request.user.username} wo={mr.work_order_number}')
+        messages.success(request, f'Work order {mr.work_order_number} rejected — asset set to On Hold.')
+    return redirect('maintenance_portal')
+
+
+@login_required
+def maintenance_decline(request, pk):
+    """
+    Technician declines an APPROVED work order.
+    → status REJECTED, asset → ON_HOLD
+    """
+    if not request.user.is_maintenance:
+        messages.error(request, 'Only maintenance technicians can decline work orders.')
+        return redirect('maintenance_detail', pk=pk)
+    mr = get_object_or_404(MaintenanceRequest, pk=pk)
+    if mr.status != MaintenanceStatus.APPROVED:
+        messages.error(request, 'Only approved work orders can be declined.')
+        return redirect('maintenance_detail', pk=pk)
+    if request.method == 'POST':
+        mr.status = MaintenanceStatus.REJECTED
+        mr.save()
+        Asset.objects.filter(pk=mr.asset_id).update(status=AssetStatus.ON_HOLD)
+        audit.info(f'MR_DECLINED by={request.user.username} wo={mr.work_order_number}')
+        messages.success(request, f'Work order {mr.work_order_number} declined — asset set to On Hold.')
+    return redirect('maintenance_portal')
 
 
 # ─── mileage ──────────────────────────────────────────────────────────────────
@@ -540,6 +686,22 @@ def asset_request_review(request, pk):
         ar.reviewed_by = request.user
         ar.save()
         audit.info(f'ASSET_REQUEST_REVIEWED by={request.user.username} id={ar.pk} status={ar.status}')
+
+        # Notify the requester about the decision + feedback
+        reviewer_name = request.user.get_full_name() or request.user.username
+        if action == AssetRequestStatus.APPROVED:
+            notif_msg = f'Your asset request #{ar.pk} "{ar.name}" has been APPROVED by {reviewer_name}.'
+        else:
+            notif_msg = f'Your asset request #{ar.pk} "{ar.name}" has been REJECTED by {reviewer_name}.'
+        if ar.manager_notes:
+            notif_msg += f' Feedback: {ar.manager_notes}'
+        if ar.requested_by:
+            AssetRequestNotification.objects.create(
+                asset_request=ar,
+                recipient=ar.requested_by,
+                message=notif_msg,
+            )
+
         if action == AssetRequestStatus.APPROVED:
             new_asset = Asset.objects.create(
                 asset_type=ar.asset_type,
@@ -565,6 +727,16 @@ def asset_request_review(request, pk):
     return render(request, 'assets/asset_request_review.html', {
         'ar': ar, 'form': form, 'created_assets': created_assets,
     })
+
+
+@login_required
+def asset_request_notifications(request):
+    """Show all asset request notifications for the current user and mark them read."""
+    notifs = AssetRequestNotification.objects.filter(recipient=request.user).select_related('asset_request')
+    unread_ids = list(notifs.filter(is_read=False).values_list('id', flat=True))
+    if unread_ids:
+        AssetRequestNotification.objects.filter(id__in=unread_ids).update(is_read=True)
+    return render(request, 'assets/asset_request_notifications.html', {'notifs': notifs})
 
 
 @login_required

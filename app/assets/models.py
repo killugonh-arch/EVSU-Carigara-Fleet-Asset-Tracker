@@ -235,6 +235,29 @@ class AssetRequest(models.Model):
         return f'AssetReq #{self.pk} – {self.name} ({self.get_status_display()})'
 
 
+class AssetRequestNotification(models.Model):
+    """Notification sent to the requester when a manager reviews their asset request."""
+    asset_request = models.ForeignKey(
+        AssetRequest,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='asset_request_notifications',
+    )
+    message   = models.TextField()
+    is_read   = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'AssetRequestNotif for {self.recipient} – Request #{self.asset_request_id}'
+
+
 class MaintenanceNotification(models.Model):
     """Notification sent to maintenance staff when a request is created or updated."""
     maintenance_request = models.ForeignKey(

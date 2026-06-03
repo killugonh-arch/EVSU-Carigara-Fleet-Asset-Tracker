@@ -59,6 +59,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'assets.context_processors.pending_asset_requests',
                 'assets.context_processors.maintenance_unread_notifications',
+                'assets.context_processors.asset_request_unread_notifications',
             ],
         },
     },

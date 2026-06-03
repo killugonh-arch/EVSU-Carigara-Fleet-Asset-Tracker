@@ -94,7 +94,7 @@
         <td style="font-size:13px">{{ r.scheduled_date|default:"—" }}</td>
         <td style="white-space:nowrap">
           <a href="{% url 'maintenance_detail' r.pk %}" class="btn btn-outline btn-xs" title="View"><i class="bi bi-eye"></i></a>
-          {% if not user.is_auditor %}
+          {% if not user.is_auditor and not user.is_maintenance %}
           <a href="{% url 'maintenance_edit' r.pk %}" class="btn btn-outline btn-xs" style="margin-left:4px" title="Edit"><i class="bi bi-pencil"></i></a>
           <form method="post" action="{% url 'maintenance_delete' r.pk %}" style="display:inline;margin-left:4px"
                 onsubmit="return confirm('Delete work order {{ r.work_order_number|escapejs }} — {{ r.title|escapejs }}?\nThis cannot be undone.')">

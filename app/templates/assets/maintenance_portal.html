@@ -42,30 +42,7 @@
   .wo-row { cursor: pointer; transition: background .15s; }
   .wo-row:hover td { background: rgba(107,0,0,.03); }
 
-  /* ── Priority row highlights ── */
-  .wo-row.priority-urgent td {
-    background-color: #fee2e2;
-    border-left: 4px solid #dc2626;
-  }
-  .wo-row.priority-urgent:hover td { background-color: #fecaca; }
 
-  .wo-row.priority-high td {
-    background-color: #ffedd5;
-    border-left: 4px solid #ea580c;
-  }
-  .wo-row.priority-high:hover td { background-color: #fed7aa; }
-
-  .wo-row.priority-medium td {
-    background-color: #fef9c3;
-    border-left: 4px solid #d97706;
-  }
-  .wo-row.priority-medium:hover td { background-color: #fef08a; }
-
-  .wo-row.priority-low td {
-    background-color: #dcfce7;
-    border-left: 4px solid #16a34a;
-  }
-  .wo-row.priority-low:hover td { background-color: #bbf7d0; }
 
   .portal-welcome {
     background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-light) 100%);
@@ -108,11 +85,11 @@
   </div>
 </div>
 
-<div class="grid-2" style="gap:24px">
+<div style="display:flex;gap:24px;align-items:stretch">
 
   {# ── Notifications Panel ── #}
-  <div>
-    <div class="card">
+  <div style="flex:0 0 40%;min-width:0;display:flex;flex-direction:column">
+    <div class="card" style="flex:1">
       <div class="card-header">
         <div class="card-header-icon">
           <i class="bi bi-bell-fill" style="color:var(--gold)"></i>
@@ -150,7 +127,7 @@
   </div>
 
   {# ── Active Work Orders ── #}
-  <div>
+  <div style="flex:0 0 60%;min-width:0">
     <div class="card">
       <div class="card-header">
         <div class="card-header-icon">
@@ -169,6 +146,7 @@
             <th>Priority</th>
             <th>Status</th>
             <th>Scheduled</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -189,6 +167,31 @@
               {% endif %}
             </td>
             <td style="font-size:12.5px">{{ wo.scheduled_date|default:"—" }}</td>
+            <td onclick="event.stopPropagation()" style="white-space:nowrap">
+              {% if wo.status == 'approved' %}
+              <form method="post" action="{% url 'maintenance_accept' wo.pk %}" style="display:inline" onsubmit="return confirm('Accept {{ wo.work_order_number|escapejs }}? Asset will be set to In Maintenance.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-xs" title="Accept & Start Work">
+                  <i class="bi bi-play-circle-fill"></i> Accept
+                </button>
+              </form>
+              <form method="post" action="{% url 'maintenance_hold' wo.pk %}" style="display:inline" onsubmit="return confirm('Put {{ wo.work_order_number|escapejs }} on hold? Asset will remain On Hold.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs" style="background:rgba(212,160,23,.12);color:#8a5a00;border:1px solid rgba(212,160,23,.4)" title="On Hold">
+                  <i class="bi bi-pause-circle-fill"></i> On Hold
+                </button>
+              </form>
+              {% elif wo.status == 'in_progress' %}
+              <form method="post" action="{% url 'maintenance_complete' wo.pk %}" style="display:inline" onsubmit="return confirm('Mark {{ wo.work_order_number|escapejs }} as Completed?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs" style="background:var(--jade);color:#fff;border:none" title="Mark Complete">
+                  <i class="bi bi-check-circle-fill"></i> Complete
+                </button>
+              </form>
+              {% else %}
+              <a href="{{ wo_url }}" class="btn btn-outline btn-xs"><i class="bi bi-eye"></i></a>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -227,6 +230,51 @@
 
   </div>
 </div>
+{# ── Awaiting Manager Approval ── #}
+{% if pending_review %}
+<div class="card" style="margin-top:24px">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-clock-history" style="color:var(--gold)"></i>
+      Awaiting Manager Approval
+      <span style="background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">{{ pending_review_count }}</span>
+    </div>
+  </div>
+  <div style="padding:10px 18px 6px;font-size:12.5px;color:var(--text-muted);display:flex;align-items:center;gap:7px">
+    <i class="bi bi-info-circle"></i>
+    These work orders are pending manager approval. You will be notified once approved and ready for action.
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Work Order</th>
+        <th>Title</th>
+        <th>Asset</th>
+        <th>Priority</th>
+        <th>Submitted By</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in pending_review %}
+      {% url 'maintenance_detail' r.pk as wr_url %}
+      <tr class="wo-row priority-{{ r.priority }}" onclick="location.href='{{ wr_url }}'">
+        <td><span class="wo-tag">{{ r.work_order_number }}</span></td>
+        <td style="font-weight:600;font-size:13px">{{ r.title }}</td>
+        <td>
+          <div style="font-weight:600;font-size:12px;color:var(--maroon)">{{ r.asset.asset_tag }}</div>
+          <div class="text-muted" style="font-size:11.5px">{{ r.asset.name }}</div>
+        </td>
+        <td><span class="badge badge-{{ r.priority }}">{{ r.get_priority_display }}</span></td>
+        <td style="font-size:13px">{{ r.submitted_by }}</td>
+        <td style="font-size:12.5px;color:var(--text-muted)">{{ r.created_at|date:"M d, Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
