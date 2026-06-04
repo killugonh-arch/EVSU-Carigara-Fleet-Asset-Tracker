@@ -1,13 +1,9 @@
-"""
-Member 2 (IAM): JWT login, role seeding
-Member 5 (DevSecOps): audit logging on every auth event, axes lockout awareness
-"""
 import logging
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .forms import LoginForm, UserCreateForm, RegisterForm
+from .forms import LoginForm, UserCreateForm, RegisterForm, ProfileForm
 from .models import User
 
 audit = logging.getLogger('fleet.audit')
@@ -32,7 +28,6 @@ def logout_view(request):
     return redirect('login')
 
 def register_view(request):
-    """Public self-registration. Creates a Staff/Driver account pending use."""
     if request.user.is_authenticated:
         return redirect('dashboard')
     form = RegisterForm(request.POST or None)
@@ -80,3 +75,16 @@ def delete_user(request, pk):
 def _ip(request):
     x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
     return x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR', '?')
+
+@login_required
+def profile_view(request):
+    user = request.user
+    form = ProfileForm(instance=user)
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            audit.info(f'PROFILE_UPDATED username={user.username}')
+            messages.success(request, 'Profile updated successfully.')
+            return redirect('profile')
+    return render(request, 'accounts/profile.html', {'form': form, 'profile_user': user})

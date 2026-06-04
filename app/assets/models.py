@@ -2,6 +2,15 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
+
+class Department(models.TextChoices):
+    IT        = 'IT',        'IT'
+    EDUCATION = 'EDUCATION', 'Education'
+    STAFF     = 'STAFF',     'Staff'
+    ENTREP    = 'ENTREP',    'Entrep'
+    FI        = 'FI',        'FI'
+
+
 class AssetType(models.TextChoices):
     VEHICLE   = 'vehicle',   'Vehicle'
     IT_EQUIPMENT = 'it',     'IT Equipment'
@@ -48,7 +57,12 @@ class Asset(models.Model):
     year            = models.PositiveSmallIntegerField(null=True, blank=True)
     serial_number   = models.CharField(max_length=100, blank=True)
     status          = models.CharField(max_length=20, choices=AssetStatus.choices, default=AssetStatus.AVAILABLE, db_index=True)
-    department      = models.CharField(max_length=100, blank=True)
+    department      = models.CharField(
+        max_length=20,
+        choices=Department.choices,
+        blank=True,
+        db_index=True,
+    )
     location        = models.CharField(max_length=200, blank=True)
 
     procurement_cost  = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -280,3 +294,43 @@ class MaintenanceNotification(models.Model):
 
     def __str__(self):
         return f'Notification for {self.recipient} – {self.maintenance_request}'
+
+class AssetUsageRequestStatus(models.TextChoices):
+    PENDING  = 'pending',  'Pending Approval'
+    APPROVED = 'approved', 'Approved'
+    REJECTED = 'rejected', 'Rejected'
+    RELEASED = 'released', 'Released'
+
+
+class AssetUsageRequest(models.Model):
+    """
+    A department user requests to use an available asset.
+    Manager approves → asset becomes In Use.
+    User releases → asset returns to Available.
+    """
+    asset       = models.ForeignKey(
+        Asset, on_delete=models.CASCADE, related_name='usage_requests'
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name='asset_usage_requests'
+    )
+    reviewed_by  = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reviewed_usage_requests'
+    )
+    department   = models.CharField(max_length=20, choices=Department.choices)
+    status       = models.CharField(
+        max_length=20, choices=AssetUsageRequestStatus.choices,
+        default=AssetUsageRequestStatus.PENDING, db_index=True
+    )
+    notes        = models.TextField(blank=True)
+    manager_notes = models.TextField(blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'UsageReq #{self.pk} – {self.asset} by {self.department} ({self.get_status_display()})'

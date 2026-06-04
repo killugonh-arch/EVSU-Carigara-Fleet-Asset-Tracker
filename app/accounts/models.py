@@ -1,29 +1,41 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
+DEPARTMENT_CHOICES = [
+    ('IT',        'IT'),
+    ('EDUCATION', 'Education'),
+    ('STAFF',     'Staff'),
+    ('ENTREP',    'Entrep'),
+    ('FI',        'FI'),
+]
+
+
 class User(AbstractUser):
-    """
-    Extended user model with university fleet roles.
-    Roles:
-      STAFF        – regular driver/staff: log requests, view own records
-      AUDITOR      – read-only across all records, no financial data
-      MANAGER      – full access including fleet valuation & procurement costs
-      MAINTENANCE  – maintenance technician: receives notifications on approved WOs, updates progress
-    """
     STAFF       = 'staff'
     AUDITOR     = 'auditor'
     MANAGER     = 'manager'
     MAINTENANCE = 'maintenance'
 
     ROLE_CHOICES = [
-        (STAFF,       'Staff / Driver'),
-        (AUDITOR,     'Auditor (Read-Only)'),
-        (MANAGER,     'Motorpool Manager'),
+        (STAFF,       'User/Staff'),
+        (AUDITOR,     'Auditor '),
+        (MANAGER,     'Manager'),
         (MAINTENANCE, 'Maintenance Technician'),
     ]
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=STAFF)
-    department = models.CharField(max_length=100, blank=True)
+    profile_picture = models.ImageField(
+        upload_to='profile_pictures/',
+        null=True, blank=True,
+        help_text='Profile photo'
+    )
+    department = models.CharField(
+        max_length=20,
+        choices=DEPARTMENT_CHOICES,
+        blank=True,
+        help_text='Department this user belongs to (required for Staff role)',
+    )
     phone = models.CharField(max_length=30, blank=True)
     license_number = models.CharField(max_length=50, blank=True, help_text='Driver license #')
 
@@ -52,5 +64,4 @@ class User(AbstractUser):
 
     @property
     def can_see_financials(self):
-        """Only managers may see fleet valuation and procurement costs."""
         return self.role == self.MANAGER

@@ -43,7 +43,7 @@ class Command(BaseCommand):
         van01, _ = Asset.objects.get_or_create(asset_tag='UV-001', defaults=dict(
             asset_type='vehicle', name='Toyota HiAce (Van 01)', make='Toyota',
             model_name='HiAce', year=2020, license_plate='ABD 1234', fuel_type='Diesel',
-            mileage=78400, next_service_km=80000, status='active', department='Motorpool',
+            mileage=78400, next_service_km=80000, status='available', department='Motorpool',
             next_maintenance_date=today - timedelta(days=3),
             procurement_cost=1850000, current_value=1200000, procurement_date=date(2020, 6, 15)))
 
@@ -57,21 +57,21 @@ class Command(BaseCommand):
         Asset.objects.get_or_create(asset_tag='PU-001', defaults=dict(
             asset_type='vehicle', name='Ford Ranger (Pickup 01)', make='Ford',
             model_name='Ranger', year=2022, license_plate='XYZ 9999', fuel_type='Diesel',
-            mileage=35000, next_service_km=40000, status='active', department='Facilities',
+            mileage=35000, next_service_km=40000, status='available', department='Facilities',
             next_maintenance_date=today + timedelta(days=30),
             procurement_cost=1550000, current_value=1380000, procurement_date=date(2022, 1, 20)))
 
         server, _ = Asset.objects.get_or_create(asset_tag='IT-SRV-001', defaults=dict(
             asset_type='it', name='Dell Server R740', make='Dell',
             model_name='PowerEdge R740', year=2021, serial_number='SN-DELL-001234',
-            status='active', department='IT Services',
+            status='available', department='IT Services',
             procurement_cost=320000, current_value=240000, procurement_date=date(2021, 8, 1),
             next_maintenance_date=today + timedelta(days=60)))
 
         Asset.objects.get_or_create(asset_tag='IT-NET-002', defaults=dict(
             asset_type='it', name='Cisco Switch (Core)', make='Cisco',
             model_name='Catalyst 9300', year=2020, serial_number='SN-CISCO-5678',
-            status='active', department='IT Services',
+            status='available', department='IT Services',
             procurement_cost=185000, current_value=130000, procurement_date=date(2020, 4, 12),
             next_maintenance_date=today - timedelta(days=10)))
 

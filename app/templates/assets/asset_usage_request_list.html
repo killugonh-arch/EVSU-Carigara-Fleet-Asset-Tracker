@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Asset Usage Requests{% endblock %}
+{% block page_title %}Asset Usage Requests{% endblock %}
+{% block nav_assets %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'asset_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Back to Assets</a>
+{% endblock %}
+
+{% block content %}
+
+{# ── Pending Requests ── #}
+<div class="card" style="margin-bottom:22px">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-hourglass-split" style="color:var(--gold)"></i>
+      Pending Requests
+      {% if pending_requests %}
+      <span style="background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">{{ pending_requests.count }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% if pending_requests %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Asset Tag</th>
+        <th>Department</th>
+        <th>Requested By</th>
+        <th>Date</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in pending_requests %}
+      <tr>
+        <td style="font-weight:600">{{ req.asset.name }}</td>
+        <td><span class="wo-tag">{{ req.asset.asset_tag }}</span></td>
+        <td>
+          <span style="background:rgba(107,0,0,.08);color:var(--maroon);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:700">
+            {{ req.department }}
+          </span>
+        </td>
+        <td>{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
+        <td style="font-size:12.5px;color:var(--text-muted)">{{ req.created_at|date:"M d, Y H:i" }}</td>
+        <td style="font-size:12.5px;color:var(--text-muted)">{{ req.notes|default:"—" }}</td>
+        <td style="white-space:nowrap">
+          <form method="post" action="{% url 'asset_usage_approve' req.pk %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs" style="background:var(--jade);color:#fff;border:none"
+                    onclick="return confirm('Approve usage request for {{ req.asset.name|escapejs }}?')">
+              <i class="bi bi-check-lg"></i> Approve
+            </button>
+          </form>
+          <form method="post" action="{% url 'asset_usage_reject' req.pk %}" style="display:inline;margin-left:4px">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs" style="background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)"
+                    onclick="return confirm('Reject usage request for {{ req.asset.name|escapejs }}?')">
+              <i class="bi bi-x-lg"></i> Reject
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-inbox"></i><p>No pending usage requests.</p></div>
+  {% endif %}
+</div>
+
+{# ── Currently Approved / In Use ── #}
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-check-circle" style="color:var(--jade)"></i>
+      Currently In Use
+    </div>
+  </div>
+  {% if approved_requests %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Asset Tag</th>
+        <th>Department</th>
+        <th>Used By</th>
+        <th>Since</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in approved_requests %}
+      <tr>
+        <td style="font-weight:600">{{ req.asset.name }}</td>
+        <td><span class="wo-tag">{{ req.asset.asset_tag }}</span></td>
+        <td>
+          <span style="background:rgba(107,0,0,.08);color:var(--maroon);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:700">
+            {{ req.department }}
+          </span>
+        </td>
+        <td>{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
+        <td style="font-size:12.5px;color:var(--text-muted)">{{ req.created_at|date:"M d, Y" }}</td>
+        <td>
+          <a href="{% url 'asset_usage_release' req.pk %}" class="btn btn-xs"
+             style="background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.3)"
+             onclick="return confirm('Force release {{ req.asset.name|escapejs }}?')">
+            <i class="bi bi-box-arrow-right"></i> Release
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-truck"></i><p>No assets currently in use.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -9,8 +9,8 @@ def pending_asset_requests(request):
 
 
 def maintenance_unread_notifications(request):
-    """Inject unread notification count for Maintenance Technician sidebar badge."""
-    if request.user.is_authenticated and hasattr(request.user, 'is_maintenance') and request.user.is_maintenance:
+    """Inject unread notification count for sidebar badge (all authenticated users)."""
+    if request.user.is_authenticated:
         count = MaintenanceNotification.objects.filter(recipient=request.user, is_read=False).count()
         return {'maintenance_notif_count': count}
     return {'maintenance_notif_count': 0}

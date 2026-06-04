@@ -380,7 +380,7 @@
       <i class="bi bi-speedometer2"></i> Dashboard
     </a>
     <a class="nav-link {% block nav_assets %}{% endblock %}" href="{% url 'asset_list' %}">
-      <i class="bi bi-truck"></i> Fleet Assets
+      <i class="bi bi-truck"></i> UniversityAssets
     </a>
     <a class="nav-link {% block nav_maintenance %}{% endblock %}" href="{% url 'maintenance_list' %}">
       <i class="bi bi-wrench-adjustable"></i> Maintenance
@@ -391,15 +391,14 @@
       <span class="nav-badge">{{ pending_nav_count }}</span>
       {% endif %}
     </a>
-    {% if user.is_staff_role and not user.is_manager and not user.is_superuser %}
-    <a class="nav-link {% block nav_ar_notifs %}{% endblock %}" href="{% url 'asset_request_notifications' %}">
-      <i class="bi bi-bell"></i> My Notifications
-      {% if asset_request_notif_count %}
-      <span class="nav-badge">{{ asset_request_notif_count }}</span>
+    <a class="nav-link {% block nav_notifs_std %}{% endblock %}" href="{% url 'maintenance_notifications' %}">
+      <i class="bi bi-bell"></i> Notifications
+      {% if maintenance_notif_count %}
+      <span class="nav-badge">{{ maintenance_notif_count }}</span>
       {% endif %}
     </a>
-    {% endif %}
-    {% if not user.is_auditor %}
+
+    {% if not user.is_auditor and not user.is_manager %}
     <a class="nav-link {% block nav_mileage %}{% endblock %}" href="{% url 'mileage_log' %}">
       <i class="bi bi-speedometer"></i> Log Mileage
     </a>
@@ -410,6 +409,15 @@
     <span class="nav-section-label">Administration</span>
     <a class="nav-link {% block nav_users %}{% endblock %}" href="{% url 'user_management' %}">
       <i class="bi bi-people"></i> User Management
+    </a>
+    <a class="nav-link {% block nav_asset_req_history %}{% endblock %}" href="{% url 'admin_asset_request_history' %}">
+      <i class="bi bi-clock-history"></i> Asset Request History
+    </a>
+    <a class="nav-link {% block nav_maint_req_history %}{% endblock %}" href="{% url 'admin_maintenance_request_history' %}">
+      <i class="bi bi-tools"></i> Maintenance History
+    </a>
+    <a class="nav-link {% block nav_mileage_review %}{% endblock %}" href="{% url 'mileage_log_list' %}">
+      <i class="bi bi-speedometer2"></i> Mileage Review
     </a>
     <a class="nav-link" href="/admin/" target="_blank">
       <i class="bi bi-gear"></i> Django Admin

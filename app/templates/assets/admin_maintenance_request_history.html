@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Maintenance Request History{% endblock %}
+{% block page_title %}Maintenance Request History{% endblock %}
+{% block nav_maint_req_history %}active{% endblock %}
+
+{% block extra_style %}
+<style>
+.filter-tab {
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--text-muted);border:1.5px solid var(--border);background:var(--surface);
+  transition:all .15s;cursor:pointer;text-decoration:none;
+}
+.filter-tab:hover { border-color:var(--maroon);color:var(--maroon); }
+.filter-tab.active { background:var(--maroon);color:#fff;border-color:var(--maroon); }
+.filter-count {
+  font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;
+  background:rgba(0,0,0,.08);color:inherit;
+}
+.filter-tab.active .filter-count { background:rgba(255,255,255,.2);color:#fff; }
+
+.requester-cell { display:flex;align-items:center;gap:10px; }
+.req-avatar {
+  width:32px;height:32px;border-radius:50%;
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.req-name     { font-weight:600;font-size:13px;line-height:1.3; }
+.req-username { font-size:11.5px;color:var(--text-muted); }
+
+.prio-dot {
+  width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;
+}
+.prio-urgent .prio-dot { background:#e74c3c; }
+.prio-high   .prio-dot { background:#e67e22; }
+.prio-medium .prio-dot { background:#2980b9; }
+.prio-low    .prio-dot { background:#aaa; }
+.prio-urgent { color:#c0392b;font-weight:700; }
+.prio-high   { color:#d35400;font-weight:600; }
+.prio-medium { color:#2980b9; }
+.prio-low    { color:var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Status filter tabs -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+  <a href="?{% if search %}q={{ search }}{% endif %}" class="filter-tab {% if not status_filter %}active{% endif %}">
+    All <span class="filter-count">{{ counts.all }}</span>
+  </a>
+  <a href="?status=pending{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">
+    Pending <span class="filter-count">{{ counts.pending }}</span>
+  </a>
+  <a href="?status=approved{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">
+    Approved <span class="filter-count">{{ counts.approved }}</span>
+  </a>
+  <a href="?status=completed{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if status_filter == 'completed' %}active{% endif %}">
+    Completed <span class="filter-count">{{ counts.completed }}</span>
+  </a>
+  <a href="?status=rejected{% if search %}&q={{ search }}{% endif %}" class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">
+    Rejected <span class="filter-count">{{ counts.rejected }}</span>
+  </a>
+</div>
+
+<!-- Search -->
+<form method="get" style="display:flex;gap:8px;margin-bottom:18px">
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  <input type="text" name="q" value="{{ search }}"
+         placeholder="Search by work order, title, asset name, or requester…"
+         class="form-control" style="font-size:13.5px">
+  <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap">
+    <i class="bi bi-search"></i> Search
+  </button>
+  {% if search %}
+  <a href="?status={{ status_filter }}" class="btn btn-outline btn-sm">
+    <i class="bi bi-x"></i> Clear
+  </a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-icon">
+      <i class="bi bi-tools" style="color:var(--gold)"></i>
+      Maintenance Request History
+    </div>
+    <span style="font-size:13px;color:var(--text-muted)">{{ requests.paginator.count }} record{{ requests.paginator.count|pluralize }}</span>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Work Order</th>
+        <th>Requested By</th>
+        <th>Asset</th>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Date &amp; Time Requested</th>
+        <th>Approved By</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mr in requests %}
+      <tr>
+        <td>
+          <span style="font-family:'DM Mono',monospace;font-size:12.5px;font-weight:700;color:var(--maroon)">
+            {{ mr.work_order_number|default:"—" }}
+          </span>
+        </td>
+        <td>
+          {% if mr.submitted_by %}
+          <div class="requester-cell">
+            {% with initials=mr.submitted_by.first_name|first|upper %}
+            {% if initials == 'A' or initials == 'B' or initials == 'C' %}
+              <div class="req-avatar" style="background:#0d6efd">
+            {% elif initials == 'D' or initials == 'E' or initials == 'F' %}
+              <div class="req-avatar" style="background:#6f42c1">
+            {% elif initials == 'G' or initials == 'H' or initials == 'I' %}
+              <div class="req-avatar" style="background:#d63384">
+            {% elif initials == 'J' or initials == 'K' or initials == 'L' %}
+              <div class="req-avatar" style="background:#198754">
+            {% elif initials == 'M' or initials == 'N' or initials == 'O' %}
+              <div class="req-avatar" style="background:#0dcaf0;color:#000">
+            {% elif initials == 'P' or initials == 'Q' or initials == 'R' %}
+              <div class="req-avatar" style="background:#20c997">
+            {% elif initials == 'S' or initials == 'T' or initials == 'U' %}
+              <div class="req-avatar" style="background:#fd7e14">
+            {% else %}
+              <div class="req-avatar" style="background:#6c757d">
+            {% endif %}
+              {{ mr.submitted_by.first_name|first|upper }}{{ mr.submitted_by.last_name|first|upper }}
+            </div>
+            {% endwith %}
+            <div>
+              <div class="req-name">{{ mr.submitted_by.get_full_name|default:mr.submitted_by.username }}</div>
+              <div class="req-username">@{{ mr.submitted_by.username }}</div>
+            </div>
+          </div>
+          {% else %}
+          <span style="color:var(--text-muted);font-size:12.5px">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'asset_detail' mr.asset_id %}" style="font-weight:600;font-size:13px;color:var(--maroon)">
+            {{ mr.asset.name }}
+          </a>
+          <div style="font-size:11.5px;color:var(--text-muted);font-family:'DM Mono',monospace">{{ mr.asset.asset_tag }}</div>
+        </td>
+        <td style="max-width:180px;font-size:13px;font-weight:500">{{ mr.title|truncatechars:55 }}</td>
+        <td>
+          <span class="prio-{{ mr.priority }}" style="display:inline-flex;align-items:center">
+            <span class="prio-dot"></span>{{ mr.get_priority_display }}
+          </span>
+        </td>
+        <td>
+          <span class="badge badge-{{ mr.status }}">{{ mr.get_status_display }}</span>
+        </td>
+        <td style="font-size:12.5px;white-space:nowrap">
+          <div style="font-weight:600;color:var(--text)">{{ mr.created_at|date:"M d, Y" }}</div>
+          <div style="color:var(--text-muted)">{{ mr.created_at|date:"h:i A" }}</div>
+        </td>
+        <td style="font-size:12.5px">
+          {% if mr.approved_by %}
+          <div style="font-weight:600">{{ mr.approved_by.get_full_name|default:mr.approved_by.username }}</div>
+          <div style="color:var(--text-muted)">{{ mr.updated_at|date:"M d, Y" }}</div>
+          {% else %}
+          <span style="color:var(--text-muted)">Not reviewed</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'maintenance_detail' mr.pk %}" class="btn btn-outline btn-xs">
+            <i class="bi bi-eye"></i> View
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9">
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No maintenance requests found{% if search %} for "<strong>{{ search }}</strong>"{% endif %}{% if status_filter %} with status <strong>{{ status_filter }}</strong>{% endif %}.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if requests.has_other_pages %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+  <div class="text-muted" style="font-size:13px">Page {{ requests.number }} of {{ requests.paginator.num_pages }}</div>
+  <nav class="pagination">
+    {% if requests.has_previous %}
+    <a href="?page={{ requests.previous_page_number }}&status={{ status_filter }}&q={{ search }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+    {% endif %}
+    {% for num in requests.paginator.page_range %}
+      {% if requests.number == num %}<span class="page-btn active">{{ num }}</span>
+      {% elif num > requests.number|add:"-3" and num < requests.number|add:"3" %}
+      <a href="?page={{ num }}&status={{ status_filter }}&q={{ search }}" class="page-btn">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if requests.has_next %}
+    <a href="?page={{ requests.next_page_number }}&status={{ status_filter }}&q={{ search }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+    {% endif %}
+  </nav>
+</div>
+{% endif %}
+
+{% endblock %}

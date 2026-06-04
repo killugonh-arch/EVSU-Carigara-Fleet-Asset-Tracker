@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
@@ -58,7 +59,7 @@
       <div class="stat-icon stat-icon-jade"><i class="bi bi-currency-dollar"></i></div>
       <div>
         <div class="stat-label">Monthly Maintenance Spend</div>
-        <div class="stat-value" style="font-size:22px;color:var(--jade)">₱{{ monthly_maintenance_spend|floatformat:2 }}</div>
+        <div class="stat-value" style="font-size:22px;color:var(--jade)">₱{{ monthly_maintenance_spend|floatformat:2|intcomma }}</div>
         <div class="stat-sub">Completed orders this month</div>
       </div>
     </div>
@@ -68,7 +69,7 @@
       <div class="stat-icon stat-icon-maroon"><i class="bi bi-bag-check"></i></div>
       <div>
         <div class="stat-label">Total Procurement Cost</div>
-        <div class="stat-value" style="font-size:22px;color:var(--maroon)">₱{{ total_procurement|floatformat:2 }}</div>
+        <div class="stat-value" style="font-size:22px;color:var(--maroon)">₱{{ total_procurement|floatformat:2|intcomma }}</div>
       </div>
     </div>
   </div>

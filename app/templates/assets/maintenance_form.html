@@ -11,6 +11,8 @@
 <div style="max-width:700px">
 
 {{ assets_json|json_script:"assets-data" }}
+{{ edit_asset_pk|default:0|json_script:"edit-asset-pk" }}
+{{ edit_asset_label|default:""|json_script:"edit-asset-label" }}
 
 <!-- Toast notification -->
 <div id="maint-toast" style="display:none;position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border-radius:12px;padding:13px 20px 13px 16px;box-shadow:0 6px 28px rgba(0,0,0,.18);gap:11px;align-items:center;min-width:320px;max-width:92vw;animation:toastIn .22s cubic-bezier(.4,0,.2,1)">
@@ -118,6 +120,14 @@
   const ASSETS          = JSON.parse(document.getElementById('assets-data').textContent);
   const search          = document.getElementById('asset-search');
   const hidden          = document.getElementById('asset-hidden');
+
+  // Pre-fill when editing an existing work order
+  const EDIT_PK    = JSON.parse(document.getElementById('edit-asset-pk').textContent);
+  const EDIT_LABEL = JSON.parse(document.getElementById('edit-asset-label').textContent);
+  if (EDIT_PK && EDIT_LABEL) {
+    hidden.value  = EDIT_PK;
+    search.value  = EDIT_LABEL;
+  }
   const drop            = document.getElementById('asset-dropdown');
   const warning         = document.getElementById('maintenance-warning');
   const warnTxt         = document.getElementById('maintenance-warning-text');

@@ -95,7 +95,10 @@
         <td style="white-space:nowrap">
           <a href="{% url 'maintenance_detail' r.pk %}" class="btn btn-outline btn-xs" title="View"><i class="bi bi-eye"></i></a>
           {% if not user.is_auditor and not user.is_maintenance %}
+          {% if user.is_manager or r.status != 'completed' %}
           <a href="{% url 'maintenance_edit' r.pk %}" class="btn btn-outline btn-xs" style="margin-left:4px" title="Edit"><i class="bi bi-pencil"></i></a>
+          {% endif %}
+          {% if user.is_manager or r.status != 'completed' %}
           <form method="post" action="{% url 'maintenance_delete' r.pk %}" style="display:inline;margin-left:4px"
                 onsubmit="return confirm('Delete work order {{ r.work_order_number|escapejs }} — {{ r.title|escapejs }}?\nThis cannot be undone.')">
             {% csrf_token %}
@@ -104,6 +107,7 @@
               <i class="bi bi-trash3"></i>
             </button>
           </form>
+          {% endif %}
           {% endif %}
         </td>
       </tr>

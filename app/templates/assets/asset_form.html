@@ -47,7 +47,10 @@
         <label class="form-label">Year</label>{{ form.year }}
       </div>
       <div class="form-group">
-        <label class="form-label">Department</label>{{ form.department }}
+        <label class="form-label" style="font-weight:700;color:var(--maroon)">Department <span style="color:#e74c3c">*</span></label>
+        {{ form.department }}
+        {% if form.department.errors %}<div class="form-error">{{ form.department.errors|join:" " }}</div>{% endif %}
+        <div class="form-hint">Assign this asset to a department. Only users in this department can request its use.</div>
       </div>
     </div>
     <div class="form-group" style="margin-top:4px">

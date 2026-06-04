@@ -2,9 +2,14 @@
 {% block title %}Notifications{% endblock %}
 {% block page_title %}Notifications{% endblock %}
 {% block nav_notifs %}active{% endblock %}
+{% block nav_notifs_std %}active{% endblock %}
 
 {% block topbar_actions %}
+{% if user.is_maintenance %}
 <a href="{% url 'maintenance_portal' %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Portal</a>
+{% else %}
+<a href="{% url 'dashboard' %}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+{% endif %}
 {% endblock %}
 
 {% block extra_style %}
@@ -25,63 +30,72 @@
   .notif-dot.read { background: transparent; border: 1.5px solid var(--border); }
   .notif-content { flex: 1; min-width: 0; }
   .notif-msg   { font-size: 13.5px; color: var(--text); line-height: 1.6; }
-  .notif-meta  { display: flex; gap: 16px; margin-top: 5px; align-items: center; }
+  .notif-meta  { display: flex; gap: 16px; margin-top: 5px; align-items: center; flex-wrap: wrap; }
   .notif-time  { font-size: 11.5px; color: var(--text-muted); }
   .notif-wo    { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--maroon-mid);
                  background: var(--bg); padding: 2px 7px; border-radius: 4px;
                  border: 1px solid var(--border); }
+  .notif-type-pill {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .pill-wo     { background: rgba(107,0,0,.08); color: var(--maroon); }
+  .pill-ar     { background: rgba(74,171,219,.12); color: var(--sky); }
 </style>
 {% endblock %}
 
 {% block content %}
 
 {% if newly_read_count %}
-<div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> {{ newly_read_count }} notification{{ newly_read_count|pluralize }} marked as read.</div>
+<div class="alert alert-success">
+  <i class="bi bi-check-circle-fill"></i>
+  {{ newly_read_count }} notification{{ newly_read_count|pluralize }} marked as read.
+</div>
 {% endif %}
 
 <div class="card">
   <div class="card-header">
-    <div class="card-header-icon"><i class="bi bi-bell" style="color:var(--gold)"></i> All Notifications ({{ notifications.paginator.count }})</div>
+    <div class="card-header-icon">
+      <i class="bi bi-bell" style="color:var(--gold)"></i>
+      All Notifications ({{ total_count }})
+    </div>
   </div>
 
-  {% for notif in notifications %}
-  <div class="notif-item {% if not notif.is_read %}unread{% endif %}">
-    <div class="notif-dot {% if notif.is_read %}read{% endif %}"></div>
+  {% for item in notifications %}
+  <div class="notif-item {% if not item.obj.is_read %}unread{% endif %}">
+    <div class="notif-dot {% if item.obj.is_read %}read{% endif %}"></div>
     <div class="notif-content">
-      <div class="notif-msg">{{ notif.message }}</div>
+      <div class="notif-msg">{{ item.obj.message }}</div>
       <div class="notif-meta">
-        <span class="notif-time"><i class="bi bi-clock" style="font-size:10px"></i> {{ notif.created_at|date:"M d, Y · H:i" }}</span>
-        <span class="notif-wo">{{ notif.maintenance_request.work_order_number }}</span>
-        <a href="{% url 'maintenance_detail' notif.maintenance_request.pk %}" class="btn btn-outline btn-xs">
-          <i class="bi bi-eye"></i> View Work Order
-        </a>
+        <span class="notif-time">
+          <i class="bi bi-clock" style="font-size:10px"></i>
+          {{ item.obj.created_at|date:"M d, Y · H:i" }}
+        </span>
+
+        {% if item.type == 'maintenance' %}
+          <span class="notif-wo">{{ item.obj.maintenance_request.work_order_number }}</span>
+          <a href="{% url 'maintenance_detail' item.obj.maintenance_request.pk %}" class="btn btn-outline btn-xs">
+            <i class="bi bi-eye"></i> View Work Order
+          </a>
+          <span class="notif-type-pill pill-wo">Work Order</span>
+        {% else %}
+          <a href="{% url 'asset_request_review' item.obj.asset_request.pk %}" class="btn btn-outline btn-xs">
+            <i class="bi bi-eye"></i> View Request
+          </a>
+          <span class="notif-type-pill pill-ar">Asset Request</span>
+        {% endif %}
       </div>
     </div>
-    {% if not notif.is_read %}
+    {% if not item.obj.is_read %}
     <span style="font-size:10.5px;color:var(--maroon);font-weight:700;background:rgba(107,0,0,.08);padding:2px 8px;border-radius:99px;flex-shrink:0">New</span>
     {% endif %}
   </div>
   {% empty %}
   <div class="empty-state">
     <i class="bi bi-bell-slash"></i>
-    <p>No notifications yet. You'll be notified when a work order is approved.</p>
+    <p>No notifications yet.</p>
   </div>
   {% endfor %}
 </div>
-
-{% if notifications.has_other_pages %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
-  <div class="text-muted" style="font-size:13px">Page {{ notifications.number }} of {{ notifications.paginator.num_pages }}</div>
-  <nav class="pagination">
-    {% if notifications.has_previous %}<a href="?page={{ notifications.previous_page_number }}" class="page-btn"><i class="bi bi-chevron-left"></i></a>{% endif %}
-    {% for num in notifications.paginator.page_range %}
-      {% if notifications.number == num %}<span class="page-btn active">{{ num }}</span>
-      {% elif num > notifications.number|add:"-3" and num < notifications.number|add:"3" %}<a href="?page={{ num }}" class="page-btn">{{ num }}</a>
-      {% endif %}
-    {% endfor %}
-    {% if notifications.has_next %}<a href="?page={{ notifications.next_page_number }}" class="page-btn"><i class="bi bi-chevron-right"></i></a>{% endif %}
-  </nav>
-</div>
-{% endif %}
 
 {% endblock %}

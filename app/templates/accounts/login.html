@@ -66,7 +66,7 @@
     }
 
     .hero-eyebrow {
-      font-size: 13px; font-weight: 600; color: rgba(255,255,255,.5);
+      font-size: 15px; font-weight: 600; color: rgba(255,255,255,.5);
       letter-spacing: .06em; margin-bottom: 20px;
       display: flex; align-items: center; gap: 8px;
     }
@@ -76,7 +76,7 @@
     }
 
     .hero-title {
-      font-size: clamp(36px, 4vw, 54px);
+      font-size: clamp(48px, 5vw, 72px);
       font-weight: 800; color: #fff;
       line-height: 1.1; letter-spacing: -.025em;
       margin-bottom: 20px;
@@ -84,7 +84,7 @@
     .hero-title .accent { color: var(--gold); }
 
     .hero-sub {
-      font-size: 15px; color: rgba(255,255,255,.5);
+      font-size: 18px; color: rgba(255,255,255,.5);
       line-height: 1.7; margin-bottom: 40px;
       max-width: 420px;
     }
@@ -112,7 +112,7 @@
     .service-icon-maroon { background: rgba(107,0,0,.5); color: var(--gold); border: 1px solid rgba(212,160,23,.2); }
     .service-icon-blue   { background: rgba(74,144,217,.15); color: var(--accent-light); border: 1px solid rgba(74,144,217,.2); }
     .service-icon-teal   { background: rgba(0,180,166,.12); color: #4ECDC4; border: 1px solid rgba(0,180,166,.2); }
-    .service-label { font-size: 13.5px; font-weight: 700; color: #fff; line-height: 1.3; }
+    .service-label { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.3; }
 
     .hero-right {
       display: flex; align-items: center; justify-content: center;
@@ -129,17 +129,17 @@
     }
 
     .login-card-header { margin-bottom: 28px; }
-    .login-card-title { font-size: 21px; font-weight: 700; color: var(--text); letter-spacing: -.02em; margin-bottom: 4px; }
-    .login-card-sub   { font-size: 13px; color: var(--text-muted); }
+    .login-card-title { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -.02em; margin-bottom: 4px; }
+    .login-card-sub   { font-size: 15px; color: var(--text-muted); }
 
     .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 7px; }
+    .form-label { display: block; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 7px; }
     .input-wrap { position: relative; }
     .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
     .form-control {
       width: 100%; padding: 10px 12px 10px 38px;
       border: 1.5px solid var(--border); border-radius: 9px;
-      font-family: inherit; font-size: 14px; color: var(--text);
+      font-family: inherit; font-size: 16px; color: var(--text);
       outline: none; transition: border-color .15s, box-shadow .15s;
       background: #FEFAFA;
     }
@@ -154,7 +154,7 @@
 
     .btn-login {
       width: 100%; padding: 11px; border-radius: 9px; border: none; cursor: pointer;
-      font-family: inherit; font-size: 14.5px; font-weight: 700; letter-spacing: .01em;
+      font-family: inherit; font-size: 17px; font-weight: 700; letter-spacing: .01em;
       background: linear-gradient(135deg, var(--maroon), var(--maroon-light));
       color: #fff; margin-top: 4px;
       box-shadow: 0 4px 16px rgba(107,0,0,.3);
@@ -166,7 +166,7 @@
     .login-footer {
       margin-top: 22px; padding-top: 18px;
       border-top: 1px solid var(--border);
-      text-align: center; font-size: 11.5px; color: var(--text-muted);
+      text-align: center; font-size: 13.5px; color: var(--text-muted);
       line-height: 1.7;
     }
 
@@ -183,7 +183,7 @@
   <canvas class="dot-canvas" id="dotCanvas"></canvas>
 
   <div class="hero-left">
-    <div class="hero-eyebrow">For All EVSU Campuses. For Every Fleet Need.</div>
+    <div class="hero-eyebrow">For All EVSU Campuses.</div>
     <h1 class="hero-title">
       University Fleet<br>
       <span class="accent">Management</span><br>
@@ -191,7 +191,7 @@
     </h1>
     <p class="hero-sub">
       A centralized platform for tracking EVSU vehicles, scheduling maintenance,
-      logging mileage, and managing work orders — across all campuses and departments.
+      logging mileage, and managing work orders.
     </p>
 
     <div class="hero-services">
@@ -245,8 +245,8 @@
       <div class="login-footer">
         Don't have an account?
         <a href="{% url 'register' %}" style="color:var(--maroon);font-weight:600;text-decoration:none">Create one here</a><br><br>
-        Eastern Visayas State University &copy; 2025<br>
-        <span style="opacity:.6">EVSU Fleet Management System — Protected by brute-force lockout</span>
+        Eastern Visayas State University &copy; 2026<br>
+      
       </div>
     </div>
   </div>

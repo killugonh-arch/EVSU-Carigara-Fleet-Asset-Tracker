@@ -4,7 +4,10 @@
 {% block nav_assets %}active{% endblock %}
 
 {% block topbar_actions %}
-
+{% if user.is_manager %}
+<a href="{% url 'asset_usage_request_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-inbox"></i> Usage Requests</a>
+<a href="{% url 'asset_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> Add Asset</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -23,10 +26,12 @@
     <label class="filter-label">Status</label>
     {{ filter.form.status }}
   </div>
+  {% if user.is_manager or user.is_auditor or user.is_maintenance %}
   <div class="filter-field">
     <label class="filter-label">Department</label>
     {{ filter.form.department }}
   </div>
+  {% endif %}
   <div style="display:flex;gap:8px;align-items:flex-end;margin-top:auto">
     <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filter</button>
     <a href="{% url 'asset_list' %}" class="btn btn-outline btn-sm">Clear</a>
@@ -37,24 +42,18 @@
 <div class="card">
   <div class="card-header">
     <div class="card-header-icon"><i class="bi bi-list-ul" style="color:var(--maroon)"></i> {{ assets.paginator.count }} Asset{{ assets.paginator.count|pluralize }}</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      {% if user.is_manager %}
-      <a href="{% url 'asset_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> Add Asset</a>
-      {% endif %}
-    </div>
   </div>
 
   <table class="data-table">
     <thead>
       <tr>
         <th>Asset Tag</th>
-        <th>Name / Model</th>
+        <th>Asset Name</th>
         <th>Type</th>
-        <th>Status</th>
         <th>Department</th>
-        <th>Mileage</th>
+        <th>Status</th>
         <th>Next Service</th>
-        <th></th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -66,11 +65,14 @@
           {% if asset.make %}<div class="text-muted" style="font-size:12px">{{ asset.make }} {{ asset.model_name }} {% if asset.year %}({{ asset.year }}){% endif %}</div>{% endif %}
         </td>
         <td>{{ asset.get_asset_type_display }}</td>
-        <td><span class="badge badge-{{ asset.status }}">{{ asset.get_status_display }}</span></td>
-        <td>{{ asset.department|default:"—" }}</td>
-        <td class="mono" style="font-size:13px">
-          {% if asset.asset_type == 'vehicle' %}{{ asset.mileage|floatformat:0 }} km{% else %}—{% endif %}
+        <td>
+          {% if asset.department %}
+          <span style="background:rgba(107,0,0,.08);color:var(--maroon);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:600">
+            {{ asset.get_department_display }}
+          </span>
+          {% else %}—{% endif %}
         </td>
+        <td><span class="badge badge-{{ asset.status }}">{{ asset.get_status_display }}</span></td>
         <td>
           {% if asset.next_maintenance_date %}
             <span class="badge {% if asset.maintenance_overdue %}badge-overdue{% else %}badge-approved{% endif %}">
@@ -80,6 +82,35 @@
         </td>
         <td style="white-space:nowrap">
           <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-outline btn-xs" title="View"><i class="bi bi-eye"></i></a>
+
+          {# ── Request Use Button Logic ── #}
+          {% if not user.is_manager and not user.is_auditor and not user.is_maintenance %}
+            {% if asset.status == 'available' %}
+              {% if asset.pk in pending_usage_asset_ids %}
+              <span class="btn btn-xs" style="margin-left:4px;background:rgba(212,160,23,.1);color:#8a5e00;border:1px solid rgba(212,160,23,.4);cursor:default" title="Awaiting approval">
+                <i class="bi bi-hourglass-split"></i> Pending
+              </span>
+              {% elif asset.pk in approved_usage_asset_ids %}
+              <span class="btn btn-xs" style="margin-left:4px;background:rgba(39,174,114,.1);color:var(--jade);border:1px solid rgba(39,174,114,.4);cursor:default">
+                <i class="bi bi-check-circle"></i> Approved
+              </span>
+              {% else %}
+              <a href="{% url 'asset_usage_request' asset.pk %}" class="btn btn-xs" style="margin-left:4px;background:var(--jade);color:#fff;border:none" title="Request to use this asset">
+                <i class="bi bi-box-arrow-in-right"></i> Request Use
+              </a>
+              {% endif %}
+            {% elif asset.status == 'in_use' %}
+            <span class="btn btn-xs" style="margin-left:4px;background:rgba(231,76,60,.08);color:#c0392b;border:1px solid rgba(231,76,60,.3);cursor:not-allowed" title="Asset is in use">
+              <i class="bi bi-lock-fill"></i> In Use
+            </span>
+            {% elif asset.status == 'maintenance' %}
+            <span class="btn btn-xs" style="margin-left:4px;background:rgba(212,160,23,.08);color:#8a5e00;border:1px solid rgba(212,160,23,.3);cursor:not-allowed" title="Asset under maintenance">
+              <i class="bi bi-wrench-fill"></i> Under Maintenance
+            </span>
+            {% endif %}
+          {% endif %}
+
+          {# ── Manager Actions ── #}
           {% if user.is_manager %}
           <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-outline btn-xs" style="margin-left:4px" title="Edit"><i class="bi bi-pencil"></i></a>
           <form method="post" action="{% url 'asset_delete' asset.pk %}" style="display:inline;margin-left:4px"
@@ -94,7 +125,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="8"><div class="empty-state"><i class="bi bi-truck"></i><p>No assets found. Try adjusting filters.</p></div></td></tr>
+      <tr><td colspan="7"><div class="empty-state"><i class="bi bi-truck"></i><p>No assets found{% if not user.is_manager %} for your department{% endif %}.</p></div></td></tr>
       {% endfor %}
     </tbody>
   </table>

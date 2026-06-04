@@ -10,9 +10,57 @@
 {% if not user.is_auditor %}
 <a href="{% url 'maintenance_create' %}" class="btn btn-gold btn-sm"><i class="bi bi-wrench"></i> New Request</a>
 {% endif %}
+{# ── Request Use / Release ── #}
+{% if not user.is_manager and not user.is_auditor and not user.is_maintenance %}
+  {% if asset.status == 'available' %}
+    {% if my_usage_request %}
+    <span class="btn btn-sm" style="background:rgba(212,160,23,.12);color:#8a5e00;border:1px solid rgba(212,160,23,.4);cursor:default">
+      <i class="bi bi-hourglass-split"></i>
+      {% if my_usage_request.status == 'pending' %}Request Pending{% else %}Request Approved{% endif %}
+    </span>
+    {% else %}
+    <a href="{% url 'asset_usage_request' asset.pk %}" class="btn btn-sm" style="background:var(--jade);color:#fff;border:none">
+      <i class="bi bi-box-arrow-in-right"></i> Request Use
+    </a>
+    {% endif %}
+  {% elif asset.status == 'in_use' and my_usage_request and my_usage_request.status == 'approved' %}
+  <a href="{% url 'asset_usage_release' my_usage_request.pk %}" class="btn btn-sm" style="background:rgba(231,76,60,.12);color:#e74c3c;border:1px solid rgba(231,76,60,.35)">
+    <i class="bi bi-box-arrow-right"></i> Release Asset
+  </a>
+  {% endif %}
+{% endif %}
+{% if user.is_manager and active_usage and active_usage.status == 'approved' %}
+<a href="{% url 'asset_usage_release' active_usage.pk %}" class="btn btn-sm" style="background:rgba(231,76,60,.12);color:#e74c3c;border:1px solid rgba(231,76,60,.35)">
+  <i class="bi bi-box-arrow-right"></i> Release Asset
+</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
+
+{# ── Usage Status Banner ── #}
+{% if asset.status == 'in_use' and active_usage %}
+<div style="display:flex;align-items:center;gap:14px;background:rgba(231,76,60,.07);border:1px solid rgba(231,76,60,.25);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px">
+  <i class="bi bi-person-check-fill" style="color:#e74c3c;font-size:20px;flex-shrink:0"></i>
+  <div style="flex:1;font-size:13.5px">
+    <span style="font-weight:700;color:#c0392b">In Use</span>
+    &nbsp;·&nbsp; <strong>{{ active_usage.department }}</strong> Department
+    &nbsp;·&nbsp; {{ active_usage.requested_by.get_full_name|default:active_usage.requested_by.username }}
+    &nbsp;·&nbsp; <span style="color:var(--text-muted)">Since {{ active_usage.created_at|date:"M d, Y" }}</span>
+  </div>
+</div>
+{% elif asset.status == 'maintenance' %}
+<div style="display:flex;align-items:center;gap:14px;background:rgba(212,160,23,.07);border:1px solid rgba(212,160,23,.25);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px">
+  <i class="bi bi-wrench-fill" style="color:#d97706;font-size:20px;flex-shrink:0"></i>
+  <div style="font-size:13.5px;font-weight:600;color:#8a5e00">Under Maintenance — asset is not available for use.</div>
+</div>
+{% elif asset.status == 'available' %}
+<div style="display:flex;align-items:center;gap:14px;background:rgba(39,174,114,.07);border:1px solid rgba(39,174,114,.25);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px">
+  <i class="bi bi-check-circle-fill" style="color:var(--jade);font-size:20px;flex-shrink:0"></i>
+  <div style="font-size:13.5px;font-weight:600;color:var(--jade)">Available — this asset is ready for use.</div>
+</div>
+{% endif %}
+
 <div class="grid-2" style="margin-bottom:20px">
   
   <div class="card">
@@ -38,7 +86,13 @@
         </div>
         <div class="detail-item">
           <div class="detail-item-label">Department</div>
-          <div class="detail-item-value">{{ asset.department|default:"—" }}</div>
+          <div class="detail-item-value">
+            {% if asset.department %}
+            <span style="background:rgba(107,0,0,.08);color:var(--maroon);padding:3px 10px;border-radius:5px;font-size:12.5px;font-weight:700">
+              {{ asset.get_department_display }}
+            </span>
+            {% else %}—{% endif %}
+          </div>
         </div>
         {% if asset.asset_type == 'vehicle' %}
         <div class="detail-item">

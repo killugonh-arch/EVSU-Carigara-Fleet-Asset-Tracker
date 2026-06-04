@@ -14,7 +14,8 @@ class UserCreateForm(forms.ModelForm):
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'role', 'department', 'phone', 'license_number']
         widgets = {f: forms.TextInput(attrs={'class': 'form-control'}) for f in
-                   ['username', 'first_name', 'last_name', 'email', 'department', 'phone', 'license_number']}
+                   ['username', 'first_name', 'last_name', 'email', 'phone', 'license_number']}
+        widgets['department'] = forms.Select(attrs={'class': 'form-select'})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,10 +37,6 @@ class UserCreateForm(forms.ModelForm):
 
 
 class RegisterForm(forms.ModelForm):
-    """
-    Self-registration form for new staff/driver accounts.
-    Role is always set to STAFF; managers must be created via User Management.
-    """
     password1 = forms.CharField(
         label='Password',
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Create a password'})
@@ -57,7 +54,7 @@ class RegisterForm(forms.ModelForm):
             'first_name':     forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
             'last_name':      forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
             'email':          forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email address'}),
-            'department':     forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your department'}),
+            'department':     forms.Select(attrs={'class': 'form-select'}),
             'phone':          forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact number'}),
             'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Driver's license # (if applicable)"}),
         }
@@ -83,3 +80,23 @@ class RegisterForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class ProfileForm(forms.ModelForm):
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'phone',
+                  'license_number', 'department', 'profile_picture']
+        widgets = {
+            'first_name':     forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name':      forms.TextInput(attrs={'class': 'form-control'}),
+            'email':          forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone':          forms.TextInput(attrs={'class': 'form-control'}),
+            'license_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'department':     forms.Select(attrs={'class': 'form-select'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+        labels = {
+            'license_number': "Driver's License #",
+        }
