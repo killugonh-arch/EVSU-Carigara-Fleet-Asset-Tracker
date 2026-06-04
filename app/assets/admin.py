@@ -1,6 +1,11 @@
 from django.contrib import admin
 from django.db.models import Case, IntegerField, Value, When
-from .models import Asset, MaintenanceRequest, MileageLog
+
+from .models import (
+    Asset, AssetRequest, AssetRequestNotification,
+    MaintenanceNotification, MaintenanceRequest, MileageLog,
+    AssetUsageRequest,
+)
 
 
 # ── helper annotation ─────────────────────────────────────────────────────────
@@ -17,9 +22,9 @@ PRIORITY_RANK = Case(
 
 @admin.register(Asset)
 class AssetAdmin(admin.ModelAdmin):
-    list_display  = ['asset_tag', 'name', 'asset_type', 'status', 'department', 'mileage', 'next_maintenance_date']
-    list_filter   = ['asset_type', 'status', 'department']
-    search_fields = ['asset_tag', 'name', 'make', 'model_name', 'license_plate', 'serial_number']
+    list_display   = ['asset_tag', 'name', 'asset_type', 'status', 'department', 'mileage', 'next_maintenance_date']
+    list_filter    = ['asset_type', 'status', 'department']
+    search_fields  = ['asset_tag', 'name', 'make', 'model_name', 'license_plate', 'serial_number']
     date_hierarchy = 'next_maintenance_date'
     fieldsets = (
         ('Identification', {'fields': ('asset_type', 'name', 'asset_tag', 'make', 'model_name', 'year', 'serial_number')}),
@@ -38,7 +43,6 @@ class MaintenanceRequestAdmin(admin.ModelAdmin):
     raw_id_fields  = ['asset', 'submitted_by', 'approved_by']
     date_hierarchy = 'scheduled_date'
 
-    # Sorting: Urgent → High → Medium → Low, then oldest first within each group
     def get_queryset(self, request):
         return (
             super()
@@ -51,10 +55,10 @@ class MaintenanceRequestAdmin(admin.ModelAdmin):
     def priority_badge(self, obj):
         from django.utils.html import format_html
         colours = {
-            'urgent': ('#dc2626', '#fff'),   # red
-            'high':   ('#ea580c', '#fff'),   # orange
-            'medium': ('#d97706', '#fff'),   # amber
-            'low':    ('#16a34a', '#fff'),   # green
+            'urgent': ('#dc2626', '#fff'),
+            'high':   ('#ea580c', '#fff'),
+            'medium': ('#d97706', '#fff'),
+            'low':    ('#16a34a', '#fff'),
         }
         bg, fg = colours.get(obj.priority, ('#6b7280', '#fff'))
         return format_html(
@@ -71,14 +75,21 @@ class MileageLogAdmin(admin.ModelAdmin):
     search_fields = ['asset__asset_tag', 'driver__username']
 
 
-from .models import AssetRequest
 @admin.register(AssetRequest)
 class AssetRequestAdmin(admin.ModelAdmin):
-    list_display = ['pk', 'name', 'asset_type', 'requested_by', 'status', 'created_at']
-    list_filter  = ['status', 'asset_type']
+    list_display  = ['pk', 'name', 'asset_type', 'requested_by', 'status', 'created_at']
+    list_filter   = ['status', 'asset_type']
+    search_fields = ['name', 'requested_by__username']
+    readonly_fields = ['created_at', 'updated_at']
 
 
-from .models import MaintenanceNotification
+@admin.register(AssetRequestNotification)
+class AssetRequestNotificationAdmin(admin.ModelAdmin):
+    list_display  = ['asset_request', 'recipient', 'is_read', 'created_at']
+    list_filter   = ['is_read']
+    search_fields = ['recipient__username']
+    readonly_fields = ['created_at']
+
 
 @admin.register(MaintenanceNotification)
 class MaintenanceNotificationAdmin(admin.ModelAdmin):
@@ -86,3 +97,11 @@ class MaintenanceNotificationAdmin(admin.ModelAdmin):
     list_filter   = ['is_read', 'created_at']
     search_fields = ['recipient__username', 'maintenance_request__work_order_number']
     readonly_fields = ['created_at']
+
+
+@admin.register(AssetUsageRequest)
+class AssetUsageRequestAdmin(admin.ModelAdmin):
+    list_display  = ['pk', 'asset', 'requested_by', 'department', 'status', 'created_at']
+    list_filter   = ['status', 'department']
+    search_fields = ['asset__asset_tag', 'department']
+    readonly_fields = ['created_at', 'updated_at']
