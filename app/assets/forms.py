@@ -88,7 +88,6 @@ class MileageLogForm(forms.ModelForm):
 
 
 class AssetRequestForm(forms.ModelForm):
-    """Staff form to request procurement of a new asset."""
     class Meta:
         model  = AssetRequest
         fields = ['asset_type', 'name', 'make', 'model_name', 'justification', 'estimated_cost']
@@ -103,7 +102,6 @@ class AssetRequestForm(forms.ModelForm):
 
 
 class AssetRequestReviewForm(forms.ModelForm):
-    """Manager form to approve/reject an asset request."""
     class Meta:
         model  = AssetRequest
         fields = ['manager_notes']
@@ -113,7 +111,6 @@ class AssetRequestReviewForm(forms.ModelForm):
 
 
 class AssetUsageRequestForm(forms.ModelForm):
-    """User form to request use of an asset."""
     class Meta:
         model  = AssetUsageRequest
         fields = ['notes']

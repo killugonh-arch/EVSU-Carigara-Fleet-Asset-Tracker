@@ -1,14 +1,12 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 class IsManager(BasePermission):
-    """Allow only motorpool managers."""
     message = 'Only motorpool managers can perform this action.'
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.is_manager)
 
 class IsManagerOrAuditor(BasePermission):
-    """Managers have full access; auditors get read-only."""
     message = 'You do not have permission to perform this action.'
 
     def has_permission(self, request, view):
@@ -21,11 +19,6 @@ class IsManagerOrAuditor(BasePermission):
         return False
 
 class IsManagerOrReadOwn(BasePermission):
-    """
-    Managers: full access.
-    Staff: read their own objects + create.
-    Auditors: read-only on all.
-    """
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated)
 

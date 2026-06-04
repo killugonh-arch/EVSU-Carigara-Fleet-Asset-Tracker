@@ -19,7 +19,6 @@ from .filters import AssetFilter, MaintenanceFilter
 
 audit = logging.getLogger('fleet.audit')
 
-# Priority sort annotation: Urgent=0  High=1  Medium=2  Low=3
 PRIORITY_RANK = Case(
     When(priority='urgent', then=Value(0)),
     When(priority='high',   then=Value(1)),

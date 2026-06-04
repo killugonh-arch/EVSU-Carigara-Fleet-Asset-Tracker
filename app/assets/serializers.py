@@ -22,7 +22,6 @@ class AssetSerializer(serializers.ModelSerializer):
         ]
 
 class AssetPublicSerializer(AssetSerializer):
-    """Non-manager view — financial fields removed."""
     class Meta(AssetSerializer.Meta):
         fields = [f for f in AssetSerializer.Meta.fields
                   if f not in ('procurement_cost', 'current_value', 'procurement_date')]
@@ -64,15 +63,13 @@ class MileageLogSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'driver', 'created_at']
 
 class DashboardAlertSerializer(serializers.Serializer):
-    """Mobile API: push alert checks for a driver's assigned vehicles."""
     asset_id     = serializers.IntegerField()
     asset_tag    = serializers.CharField()
     asset_name   = serializers.CharField()
-    alert_type   = serializers.CharField()   # 'overdue_maintenance' | 'service_km'
+    alert_type   = serializers.CharField()  
     message      = serializers.CharField()
 
 class FleetSummarySerializer(serializers.Serializer):
-    """Manager-only fleet-wide financial summary."""
     total_assets        = serializers.IntegerField()
     total_vehicles      = serializers.IntegerField()
     total_it_equipment  = serializers.IntegerField()

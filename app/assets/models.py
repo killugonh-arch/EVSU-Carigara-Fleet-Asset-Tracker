@@ -44,11 +44,6 @@ class MaintenanceFrequency(models.TextChoices):
     ANNUALLY  = 'annually',  'Annually'
 
 class Asset(models.Model):
-    """
-    Represents a university-owned vehicle or high-value IT asset.
-    Financial fields (procurement_cost) are restricted at the API/template
-    layer to MANAGER role only.
-    """
     asset_type      = models.CharField(max_length=20, choices=AssetType.choices, default=AssetType.VEHICLE, db_index=True)
     name            = models.CharField(max_length=200)
     asset_tag       = models.CharField(max_length=50, unique=True, blank=True, help_text='Auto-generated if left blank (e.g. EVSU-VH-00042)')
@@ -97,7 +92,6 @@ class Asset(models.Model):
         return f'[{self.asset_tag}] {self.name}'
 
     def save(self, *args, **kwargs):
-        # Auto-generate asset_tag if not provided
         if not self.asset_tag:
             prefix_map = {
                 AssetType.VEHICLE:      'VH',
@@ -221,7 +215,7 @@ class AssetRequestStatus(models.TextChoices):
 
 
 class AssetRequest(models.Model):
-    """Staff-submitted request for a new asset to be procured."""
+
     requested_by   = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name='asset_requests'
@@ -250,7 +244,6 @@ class AssetRequest(models.Model):
 
 
 class AssetRequestNotification(models.Model):
-    """Notification sent to the requester when a manager reviews their asset request."""
     asset_request = models.ForeignKey(
         AssetRequest,
         on_delete=models.CASCADE,
@@ -273,7 +266,6 @@ class AssetRequestNotification(models.Model):
 
 
 class MaintenanceNotification(models.Model):
-    """Notification sent to maintenance staff when a request is created or updated."""
     maintenance_request = models.ForeignKey(
         MaintenanceRequest,
         on_delete=models.CASCADE,
@@ -303,11 +295,6 @@ class AssetUsageRequestStatus(models.TextChoices):
 
 
 class AssetUsageRequest(models.Model):
-    """
-    A department user requests to use an available asset.
-    Manager approves → asset becomes In Use.
-    User releases → asset returns to Available.
-    """
     asset       = models.ForeignKey(
         Asset, on_delete=models.CASCADE, related_name='usage_requests'
     )

@@ -16,11 +16,6 @@ from .serializers import (
 from .filters import AssetFilter, MaintenanceFilter, MileageFilter
 
 class AssetViewSet(viewsets.ModelViewSet):
-    """
-    list/retrieve   – all authenticated users (financial fields stripped for non-managers)
-    create/update   – managers only
-    destroy         – managers only
-    """
     queryset         = Asset.objects.all()
     filter_backends  = [DjangoFilterBackend]
     filterset_class  = AssetFilter
@@ -62,7 +57,6 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsManager])
     def approve(self, request, pk=None):
-        """PATCH /api/maintenance/{id}/approve/"""
         mr = self.get_object()
         mr.status      = 'approved'
         mr.approved_by = request.user
@@ -93,7 +87,6 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(mr).data)
 
 class MileageLogViewSet(viewsets.ModelViewSet):
-    """Mobile-ready endpoint for drivers to submit odometer readings."""
     queryset         = MileageLog.objects.select_related('asset', 'driver')
     serializer_class = MileageLogSerializer
     filterset_class  = MileageFilter
@@ -114,11 +107,6 @@ class MileageLogViewSet(viewsets.ModelViewSet):
         serializer.save(driver=self.request.user)
 
 class DashboardAlertsView(APIView):
-    """
-    GET /api/alerts/
-    Returns maintenance overdue and service-km alerts for the requesting user.
-    Managers see all. Staff/auditors see only vehicles assigned to them.
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -154,10 +142,6 @@ class DashboardAlertsView(APIView):
         return Response(serializer.data)
 
 class FleetSummaryView(APIView):
-    """
-    GET /api/fleet-summary/
-    Returns financial summary. JWT without can_see_financials=True returns 403.
-    """
     permission_classes = [IsManager]
 
     def get(self, request):

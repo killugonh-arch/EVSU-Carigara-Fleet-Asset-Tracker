@@ -18,7 +18,6 @@ class AssetFilter(django_filters.FilterSet):
         )
 
     def filter_department(self, queryset, name, value):
-        # Staff are locked to their own department — ignore the filter value
         if self.user and not self.user.is_manager and not self.user.is_auditor and not self.user.is_maintenance:
             return queryset
         return queryset.filter(department__icontains=value)

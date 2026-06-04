@@ -1,8 +1,3 @@
-"""
-Eastern Visayas State University – Fleet Management System
-Member 1 (Cloud/DevOps): env-var driven config, Cloudinary, PaaS-ready
-Member 5 (DevSecOps): django-axes, rate-limit, Bandit-clean security headers
-"""
 import os
 from pathlib import Path
 from datetime import timedelta
