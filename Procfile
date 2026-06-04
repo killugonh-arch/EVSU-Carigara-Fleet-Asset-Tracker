@@ -1,0 +1,1 @@
+﻿web: cd app && python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn fleet_tracker.wsgi
