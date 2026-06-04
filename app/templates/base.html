@@ -432,12 +432,14 @@
 
   <div class="sidebar-footer">
     <div class="sidebar-user">
-      <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-      <div class="user-info">
-        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
-        <div class="user-role">{{ user.get_role_display }}</div>
-      </div>
-      <a href="{% url 'logout' %}" title="Logout" style="color:rgba(255,255,255,.3); font-size:16px; margin-left:4px;"
+      <a href="{% url 'profile' %}" title="Edit profile" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-decoration:none;">
+        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="user-role">{{ user.get_role_display }}</div>
+        </div>
+      </a>
+      <a href="{% url 'logout' %}" title="Logout" style="color:rgba(255,255,255,.3);font-size:16px;margin-left:4px;flex-shrink:0;"
          onclick="return confirmLogout(event)">
         <i class="bi bi-box-arrow-right"></i>
       </a>
