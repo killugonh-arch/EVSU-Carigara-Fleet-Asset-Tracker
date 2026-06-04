@@ -48,13 +48,14 @@ class RegisterForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'department', 'phone', 'license_number']
+        fields = ['username', 'first_name', 'last_name', 'email', 'role', 'department', 'phone', 'license_number']
         widgets = {
             'username':       forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Choose a username'}),
             'first_name':     forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
             'last_name':      forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
             'email':          forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email address'}),
             'department':     forms.Select(attrs={'class': 'form-select'}),
+            'role':           forms.Select(attrs={'class': 'form-select'}),
             'phone':          forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact number'}),
             'license_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Driver's license # (if applicable)"}),
         }
@@ -75,7 +76,6 @@ class RegisterForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password1'])
-        user.role = User.STAFF          # self-registered users are always Staff
         user.is_active = True
         if commit:
             user.save()
