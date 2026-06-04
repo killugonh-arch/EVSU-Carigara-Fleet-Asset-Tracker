@@ -1,0 +1,552 @@
+{
+  "info": {
+    "name": "EVSU Fleet Tracker API",
+    "description": "Full API collection for the EVSU Fleet Tracker Django application. Base URL: {{base_url}}. JWT authentication is required for most endpoints.\n\n**Roles:** manager, auditor, staff, maintenance\n\n**Auth flow:** POST /api/auth/token/ → copy `access` token → set as `{{access_token}}` variable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Auth",
+      "description": "JWT token endpoints. Obtain, refresh, and blacklist tokens.",
+      "item": [
+        {
+          "name": "Obtain Token (Login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access)  pm.collectionVariables.set('access_token',  json.access);",
+                  "if (json.refresh) pm.collectionVariables.set('refresh_token', json.refresh);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access) pm.collectionVariables.set('access_token', json.access);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/refresh/", "host": ["{{base_url}}"], "path": ["api","auth","token","refresh",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Blacklist Token (Logout)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/blacklist/", "host": ["{{base_url}}"], "path": ["api","auth","token","blacklist",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtain Token — Unauthenticated (wrong password)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] },
+            "description": "Expected: 401 Unauthorized — No token in body, credentials invalid."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtain Token — Unauthenticated (missing fields)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] },
+            "description": "Expected: 400 Bad Request — username and password fields required."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Assets",
+      "description": "CRUD for fleet assets (vehicles, IT equipment, etc.). Read = any authenticated user. Write = Manager only.",
+      "item": [
+        {
+          "name": "List Assets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/assets/",
+              "host": ["{{base_url}}"], "path": ["api","assets",""],
+              "query": [
+                { "key": "asset_type", "value": "vehicle", "disabled": true },
+                { "key": "status", "value": "available", "disabled": true },
+                { "key": "department", "value": "IT", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "ordering", "value": "name", "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve Asset",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/assets/1/", "host": ["{{base_url}}"], "path": ["api","assets","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Asset (Manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset_type\": \"vehicle\",\n  \"name\": \"Toyota Hiace Van\",\n  \"asset_tag\": \"VH-2024-001\",\n  \"make\": \"Toyota\",\n  \"model_name\": \"Hiace\",\n  \"year\": 2024,\n  \"serial_number\": \"SN-TH-001\",\n  \"status\": \"available\",\n  \"department\": \"IT\",\n  \"location\": \"EVSU Campus Garage\",\n  \"mileage\": 0,\n  \"fuel_type\": \"diesel\",\n  \"license_plate\": \"ABC 123\",\n  \"next_service_km\": 5000,\n  \"next_maintenance_date\": \"2025-01-01\",\n  \"procurement_cost\": \"1500000.00\",\n  \"current_value\": \"1200000.00\",\n  \"procurement_date\": \"2024-01-15\",\n  \"notes\": \"New acquisition\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/assets/", "host": ["{{base_url}}"], "path": ["api","assets",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Asset (Manager)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset_type\": \"vehicle\",\n  \"name\": \"Toyota Hiace Van (Updated)\",\n  \"asset_tag\": \"VH-2024-001\",\n  \"make\": \"Toyota\",\n  \"model_name\": \"Hiace\",\n  \"year\": 2024,\n  \"status\": \"in_use\",\n  \"mileage\": 500\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/assets/1/", "host": ["{{base_url}}"], "path": ["api","assets","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Partial Update Asset (Manager)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"under_maintenance\",\n  \"mileage\": 1250\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/assets/1/", "host": ["{{base_url}}"], "path": ["api","assets","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Asset (Manager)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/assets/1/", "host": ["{{base_url}}"], "path": ["api","assets","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "List Assets — Unauthenticated",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/assets/", "host": ["{{base_url}}"], "path": ["api","assets",""] },
+            "description": "Expected: 401 Unauthorized — no token provided."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Asset — Unauthenticated (no token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset_type\": \"vehicle\",\n  \"name\": \"Test Van\",\n  \"asset_tag\": \"VH-9999\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/assets/", "host": ["{{base_url}}"], "path": ["api","assets",""] },
+            "description": "Expected: 401 Unauthorized."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Asset — Forbidden (Staff role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset_type\": \"vehicle\",\n  \"name\": \"Unauthorized Van\",\n  \"asset_tag\": \"VH-9999\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/assets/", "host": ["{{base_url}}"], "path": ["api","assets",""] },
+            "description": "Login as a Staff/Auditor/Maintenance user first. Expected: 403 Forbidden — only Managers may create assets."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Maintenance Requests",
+      "description": "Create and manage maintenance requests. Staff can create & read their own. Manager can approve/reject/complete and read all.",
+      "item": [
+        {
+          "name": "List Maintenance Requests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/maintenance/",
+              "host": ["{{base_url}}"], "path": ["api","maintenance",""],
+              "query": [
+                { "key": "status", "value": "pending", "disabled": true },
+                { "key": "priority", "value": "high", "disabled": true },
+                { "key": "asset", "value": "1", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "ordering", "value": "-created_at", "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve Maintenance Request",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/maintenance/1/", "host": ["{{base_url}}"], "path": ["api","maintenance","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Maintenance Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset\": 1,\n  \"title\": \"Oil Change & Filter Replacement\",\n  \"description\": \"Scheduled oil change at 5,000 km interval.\",\n  \"priority\": \"medium\",\n  \"estimated_cost\": \"3500.00\",\n  \"requested_date\": \"2025-02-01\",\n  \"vendor\": \"Toyota Service Center\",\n  \"notes\": \"Use 5W-30 synthetic oil\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/maintenance/", "host": ["{{base_url}}"], "path": ["api","maintenance",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Maintenance Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"high\",\n  \"notes\": \"Urgent — vehicle leaking oil\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/maintenance/1/", "host": ["{{base_url}}"], "path": ["api","maintenance","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Maintenance Request (Manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduled_date\": \"2025-02-10\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/maintenance/1/approve/", "host": ["{{base_url}}"], "path": ["api","maintenance","1","approve",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Maintenance Request (Manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Budget not available for this quarter\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/maintenance/1/reject/", "host": ["{{base_url}}"], "path": ["api","maintenance","1","reject",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Maintenance Request (Manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actual_cost\": \"3200.00\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/maintenance/1/complete/", "host": ["{{base_url}}"], "path": ["api","maintenance","1","complete",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Maintenance Request (Manager)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/maintenance/1/", "host": ["{{base_url}}"], "path": ["api","maintenance","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "List Maintenance Requests — Unauthenticated",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/maintenance/", "host": ["{{base_url}}"], "path": ["api","maintenance",""] },
+            "description": "Expected: 401 Unauthorized."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Maintenance — Forbidden (Staff role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduled_date\": \"2025-02-10\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/maintenance/1/approve/", "host": ["{{base_url}}"], "path": ["api","maintenance","1","approve",""] },
+            "description": "Use a Staff user token. Expected: 403 Forbidden — only Managers may approve."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Maintenance — Forbidden (Staff role)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/maintenance/1/", "host": ["{{base_url}}"], "path": ["api","maintenance","1",""] },
+            "description": "Use a Staff user token. Expected: 403 Forbidden — only Managers may delete."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Mileage Logs",
+      "description": "Log odometer readings per trip. Any authenticated user can create. Staff see only their own logs. Manager can update/delete any.",
+      "item": [
+        {
+          "name": "List Mileage Logs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/mileage/",
+              "host": ["{{base_url}}"], "path": ["api","mileage",""],
+              "query": [
+                { "key": "asset", "value": "1", "disabled": true },
+                { "key": "log_date", "value": "2025-01-01", "disabled": true },
+                { "key": "ordering", "value": "-log_date", "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve Mileage Log",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/mileage/1/", "host": ["{{base_url}}"], "path": ["api","mileage","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Mileage Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset\": 1,\n  \"odometer\": 1500,\n  \"trip_km\": 120,\n  \"log_date\": \"2025-01-20\",\n  \"purpose\": \"Campus delivery run\",\n  \"notes\": \"No issues noted\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mileage/", "host": ["{{base_url}}"], "path": ["api","mileage",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Mileage Log (Manager)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"odometer\": 1520,\n  \"notes\": \"Corrected odometer reading\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mileage/1/", "host": ["{{base_url}}"], "path": ["api","mileage","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Mileage Log (Manager)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/mileage/1/", "host": ["{{base_url}}"], "path": ["api","mileage","1",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "List Mileage Logs — Unauthenticated",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/mileage/", "host": ["{{base_url}}"], "path": ["api","mileage",""] },
+            "description": "Expected: 401 Unauthorized."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Mileage Log — Forbidden (Staff role)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/mileage/1/", "host": ["{{base_url}}"], "path": ["api","mileage","1",""] },
+            "description": "Use a Staff user token. Expected: 403 Forbidden — only Managers may delete mileage logs."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Dashboard",
+      "description": "Summary and alert endpoints for the fleet dashboard.",
+      "item": [
+        {
+          "name": "Dashboard Alerts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/alerts/", "host": ["{{base_url}}"], "path": ["api","alerts",""] },
+            "description": "Returns overdue maintenance and service KM alerts for vehicles. Staff see only vehicles they have driven."
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet Summary (Manager only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/fleet-summary/", "host": ["{{base_url}}"], "path": ["api","fleet-summary",""] },
+            "description": "Returns totals: assets, vehicles, IT equipment, valuations, pending requests, overdue maintenance."
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard Alerts — Unauthenticated",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/alerts/", "host": ["{{base_url}}"], "path": ["api","alerts",""] },
+            "description": "Expected: 401 Unauthorized."
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet Summary — Forbidden (Staff role)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/fleet-summary/", "host": ["{{base_url}}"], "path": ["api","fleet-summary",""] },
+            "description": "Use a Staff user token. Expected: 403 Forbidden — Manager role required."
+          },
+          "response": []
+        }
+      ]
+    }
+
+  ]
+}
