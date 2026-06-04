@@ -17,3 +17,4 @@
 [2026-06-04 17:34:22,284] AUDIT INFO user=fleet.audit LOGIN_SUCCESS username=manager2 ip=127.0.0.1
 [2026-06-04 17:34:32,611] AUDIT INFO user=fleet.audit PROFILE_UPDATED username=manager2
 [2026-06-04 22:47:33,573] AUDIT WARNING user=axes.handlers.database AXES: New login failure by {ip_address: "********************", path_info: "/api/auth/token/"}. Created new record in the database.
+[2026-06-04 22:48:02,823] AUDIT WARNING user=axes.handlers.database AXES: Repeated login failure by {ip_address: "********************", path_info: "/api/auth/token/"}. Updated existing record in the database.
