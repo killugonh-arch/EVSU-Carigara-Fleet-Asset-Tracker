@@ -1,1 +1,1 @@
-﻿web: cd app && python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn fleet_tracker.wsgi
+﻿web: cd app && python manage.py axes_reset && python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py createsuperuser --noinput --username admin --email admin@evsu.edu.ph || true && gunicorn fleet_tracker.wsgi
