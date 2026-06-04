@@ -26,6 +26,8 @@ INSTALLED_APPS = [
 
     'accounts',
     'assets',
+
+  'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -34,6 +36,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'axes.middleware.AxesMiddleware',                   # Member 5: brute-force protection
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -60,6 +63,8 @@ TEMPLATES = [
         },
     },
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 WSGI_APPLICATION = 'fleet_tracker.wsgi.application'
 
