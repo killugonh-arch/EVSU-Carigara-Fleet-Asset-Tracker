@@ -16,7 +16,7 @@
       "description": "JWT token endpoints. Obtain, refresh, and blacklist tokens.",
       "item": [
         {
-          "name": "Obtain Token (Login)",
+          "name": "Login — Manager (manager1)",
           "event": [
             {
               "listen": "test",
@@ -35,7 +35,85 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@1234\"\n}"
+              "raw": "{\n  \"username\": \"manager1\",\n  \"password\": \"manager123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login — Auditor (auditor1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access)  pm.collectionVariables.set('access_token',  json.access);",
+                  "if (json.refresh) pm.collectionVariables.set('refresh_token', json.refresh);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"auditor1\",\n  \"password\": \"auditor123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login — Staff / Driver (driver1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access)  pm.collectionVariables.set('access_token',  json.access);",
+                  "if (json.refresh) pm.collectionVariables.set('refresh_token', json.refresh);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"driver1\",\n  \"password\": \"driver123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login — Maintenance (tech1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access)  pm.collectionVariables.set('access_token',  json.access);",
+                  "if (json.refresh) pm.collectionVariables.set('refresh_token', json.refresh);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"tech1\",\n  \"password\": \"tech1234\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] }
           },
@@ -89,7 +167,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpassword\"\n}"
+              "raw": "{\n  \"username\": \"manager1\",\n  \"password\": \"wrongpassword\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/auth/token/", "host": ["{{base_url}}"], "path": ["api","auth","token",""] },
             "description": "Expected: 401 Unauthorized — No token in body, credentials invalid."
@@ -239,7 +317,7 @@
               "raw": "{\n  \"asset_type\": \"vehicle\",\n  \"name\": \"Unauthorized Van\",\n  \"asset_tag\": \"VH-9999\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/assets/", "host": ["{{base_url}}"], "path": ["api","assets",""] },
-            "description": "Login as a Staff/Auditor/Maintenance user first. Expected: 403 Forbidden — only Managers may create assets."
+            "description": "Login as driver1 first. Expected: 403 Forbidden — only Managers may create assets."
           },
           "response": []
         }
@@ -390,7 +468,7 @@
               "raw": "{\n  \"scheduled_date\": \"2025-02-10\"\n}"
             },
             "url": { "raw": "{{base_url}}/api/maintenance/1/approve/", "host": ["{{base_url}}"], "path": ["api","maintenance","1","approve",""] },
-            "description": "Use a Staff user token. Expected: 403 Forbidden — only Managers may approve."
+            "description": "Use driver1 token. Expected: 403 Forbidden — only Managers may approve."
           },
           "response": []
         },
@@ -400,7 +478,7 @@
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
             "url": { "raw": "{{base_url}}/api/maintenance/1/", "host": ["{{base_url}}"], "path": ["api","maintenance","1",""] },
-            "description": "Use a Staff user token. Expected: 403 Forbidden — only Managers may delete."
+            "description": "Use driver1 token. Expected: 403 Forbidden — only Managers may delete."
           },
           "response": []
         }
@@ -494,7 +572,7 @@
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
             "url": { "raw": "{{base_url}}/api/mileage/1/", "host": ["{{base_url}}"], "path": ["api","mileage","1",""] },
-            "description": "Use a Staff user token. Expected: 403 Forbidden — only Managers may delete mileage logs."
+            "description": "Use driver1 token. Expected: 403 Forbidden — only Managers may delete mileage logs."
           },
           "response": []
         }
@@ -541,7 +619,7 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
             "url": { "raw": "{{base_url}}/api/fleet-summary/", "host": ["{{base_url}}"], "path": ["api","fleet-summary",""] },
-            "description": "Use a Staff user token. Expected: 403 Forbidden — Manager role required."
+            "description": "Use driver1 token. Expected: 403 Forbidden — Manager role required."
           },
           "response": []
         }
