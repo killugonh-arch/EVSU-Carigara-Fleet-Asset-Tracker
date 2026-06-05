@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'accounts',
     'assets',
 
-  'corsheaders',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -38,7 +38,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'axes.middleware.AxesMiddleware',        # ✅ must be AFTER Auth, but...
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -125,7 +125,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 8,
-    'DEFAULT_THROTTLE_CLASSES': [                       # Member 5: rate limiting
+    'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
@@ -153,14 +153,15 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-
-AXES_FAILURE_LIMIT       = 3
-AXES_COOLOFF_TIME        = timedelta(minutes=3)
-AXES_RESET_ON_SUCCESS    = True
-AXES_ENABLE_ADMIN        = True
-AXES_VERBOSE             = True         
-AXES_LOCK_OUT_AT_FAILURE = True        
-AXES_LOCKOUT_CALLABLE    = 'axes.helpers.get_lockout_response'  
+# ── Axes brute-force protection ───────────────────────────────────────────────
+AXES_FAILURE_LIMIT       = 5                                    # lock after 5 failures
+AXES_COOLOFF_TIME        = timedelta(minutes=15)                # auto-unlock after 15 min
+AXES_LOCK_OUT_AT_FAILURE = True                                 # explicitly enable lockout
+AXES_RESET_ON_SUCCESS    = True                                 # clear failures on good login
+AXES_ENABLE_ADMIN        = True                                 # show in Django admin
+AXES_VERBOSE             = False                                # set True temporarily to debug
+AXES_LOCKOUT_CALLABLE    = 'accounts.helpers.axes_lockout_response'  # JSON 403, no 500
+# ─────────────────────────────────────────────────────────────────────────────
 
 if not DEBUG:
     SECURE_HSTS_SECONDS            = 31536000
