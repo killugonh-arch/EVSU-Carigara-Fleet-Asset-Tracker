@@ -217,6 +217,18 @@
         <div class="login-card-sub">Sign in to your EVSU Fleet account</div>
       </div>
 
+      {% if lockout %}
+      <div style="background:rgba(107,0,0,.08);border:1.5px solid rgba(107,0,0,.25);border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px">
+        <i class="bi bi-lock-fill" style="color:var(--maroon);font-size:18px;flex-shrink:0;margin-top:1px"></i>
+        <div>
+          <div style="font-weight:700;font-size:13.5px;color:var(--maroon)">Account Temporarily Locked</div>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px">
+            Too many failed login attempts. Please try again in <strong>{{ lockout_minutes }} minute{{ lockout_minutes|pluralize }}</strong>.
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       {% if form.non_field_errors %}
       <div class="error-banner"><i class="bi bi-exclamation-circle"></i> {{ form.non_field_errors|join:", " }}</div>
       {% endif %}
@@ -227,7 +239,8 @@
           <label class="form-label">Username</label>
           <div class="input-wrap">
             <i class="bi bi-person input-icon"></i>
-            <input type="text" name="username" class="form-control" placeholder="Enter your username" autocomplete="username" required>
+            <input type="text" name="username" class="form-control" placeholder="Enter your username" autocomplete="username"
+              {% if lockout %}value="{{ locked_username }}" readonly style="opacity:.6;cursor:not-allowed"{% endif %} required>
           </div>
           {% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
         </div>
@@ -235,11 +248,14 @@
           <label class="form-label">Password</label>
           <div class="input-wrap">
             <i class="bi bi-lock input-icon"></i>
-            <input type="password" name="password" class="form-control" placeholder="Enter your password" autocomplete="current-password" required>
+            <input type="password" name="password" class="form-control" placeholder="Enter your password" autocomplete="current-password"
+              {% if lockout %}disabled style="opacity:.6;cursor:not-allowed"{% endif %} required>
           </div>
           {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
         </div>
-        <button type="submit" class="btn-login">Sign In <i class="bi bi-arrow-right"></i></button>
+        <button type="submit" class="btn-login" {% if lockout %}disabled style="opacity:.5;cursor:not-allowed"{% endif %}>
+          {% if lockout %}<i class="bi bi-lock-fill"></i> Account Locked{% else %}Sign In <i class="bi bi-arrow-right"></i>{% endif %}
+        </button>
       </form>
 
       <div class="login-footer">
