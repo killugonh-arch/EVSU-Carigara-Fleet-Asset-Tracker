@@ -154,14 +154,17 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # ── Axes brute-force protection ───────────────────────────────────────────────
-AXES_FAILURE_LIMIT       = 3                             # lock after 5 failures
-AXES_COOLOFF_TIME        = timedelta(minutes=3)                # auto-unlock after 15 min
-AXES_LOCK_OUT_AT_FAILURE = True                                 # explicitly enable lockout
-AXES_RESET_ON_SUCCESS    = True                                 # clear failures on good login
-AXES_ENABLE_ADMIN        = True                                 # show in Django admin
-AXES_VERBOSE             = False                                # set True temporarily to debug
-AXES_LOCKOUT_CALLABLE    = 'fleet_tracker.helpers.axes_lockout_response'  # JSON 403, no 500
-AXES_LOCKOUT_BY_COMBINATION_USER_AND_IP = True                  # Lock only this username+IP ✅ NEW
+AXES_FAILURE_LIMIT       = 3                             # lock after 3 failures
+AXES_COOLOFF_TIME        = timedelta(minutes=3)          # auto-unlock after 3 min
+AXES_LOCK_OUT_AT_FAILURE = True                          # explicitly enable lockout
+AXES_RESET_ON_SUCCESS    = True                          # clear failures on good login
+AXES_ENABLE_ADMIN        = True                          # show in Django admin
+AXES_VERBOSE             = False                         # set True temporarily to debug
+AXES_LOCKOUT_CALLABLE    = 'fleet_tracker.helpers.axes_lockout_response'
+# Lock only the specific username that failed — NOT everyone from the same IP.
+# AXES_LOCKOUT_BY_COMBINATION_USER_AND_IP was a non-existent setting (ignored by axes),
+# which caused it to fall back to IP-based locking and lock all accounts on the same IP.
+AXES_LOCKOUT_PARAMETERS  = [["username"]]               # ✅ lock only the bad-password account
 # ─────────────────────────────────────────────────────────────────────────────
 
 if not DEBUG:
