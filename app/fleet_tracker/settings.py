@@ -153,12 +153,12 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-AXES_FAILURE_LIMIT       = 3      
-AXES_COOLOFF_TIME        = timedelta(minutes=5)
-AXES_LOCKOUT_CALLABLE    = None
-AXES_RESET_ON_SUCCESS    = True
-AXES_ENABLE_ADMIN        = True
-AXES_VERBOSE             = False
+AXES_FAILURE_LIMIT    = 3
+AXES_COOLOFF_TIME     = timedelta(minutes=5)
+AXES_LOCKOUT_PARAMETERS = ['username']   # <-- add this
+AXES_RESET_ON_SUCCESS = True
+AXES_ENABLE_ADMIN     = True
+AXES_VERBOSE          = False
 
 if not DEBUG:
     SECURE_HSTS_SECONDS            = 31536000
