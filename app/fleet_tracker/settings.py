@@ -155,7 +155,7 @@ AUTHENTICATION_BACKENDS = [
 
 
 AXES_FAILURE_LIMIT       = 3
-AXES_COOLOFF_TIME        = timedelta(minutes=10)
+AXES_COOLOFF_TIME        = timedelta(minutes=3)
 AXES_RESET_ON_SUCCESS    = True
 AXES_ENABLE_ADMIN        = True
 AXES_VERBOSE             = True         
