@@ -154,13 +154,18 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # ── Axes brute-force protection ───────────────────────────────────────────────
-AXES_FAILURE_LIMIT       = 5                                    # lock after 5 failures
-AXES_COOLOFF_TIME        = timedelta(minutes=15)                # auto-unlock after 15 min
-AXES_LOCK_OUT_AT_FAILURE = True                                 # explicitly enable lockout
-AXES_RESET_ON_SUCCESS    = True                                 # clear failures on good login
-AXES_ENABLE_ADMIN        = True                                 # show in Django admin
-AXES_VERBOSE             = False                                # set True temporarily to debug
-AXES_LOCKOUT_CALLABLE    = 'fleet_tracker.helpers.axes_lockout_response'  # JSON 403, no 500 ✅ FIXED
+AXES_FAILURE_LIMIT                          = 3                                
+AXES_COOLOFF_TIME                           = timedelta(minutes=3)             
+AXES_LOCK_OUT_AT_FAILURE                    = True                                
+AXES_RESET_ON_SUCCESS                       = True                                 
+AXES_ENABLE_ADMIN                           = True                                 
+AXES_VERBOSE                                = False                                
+AXES_LOCKOUT_CALLABLE                       = 'fleet_tracker.helpers.axes_lockout_response'  
+AXES_LOCKOUT_BY_COMBINATION_USER_AND_IP     = False                                
+AXES_META_PRECEDENCE                        = [                                  
+    'HTTP_X_FORWARDED_FOR',
+    'REMOTE_ADDR',
+]
 # ─────────────────────────────────────────────────────────────────────────────
 
 if not DEBUG:
