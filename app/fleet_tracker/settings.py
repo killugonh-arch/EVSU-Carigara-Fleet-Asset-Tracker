@@ -160,7 +160,7 @@ AXES_LOCK_OUT_AT_FAILURE = True                                 # explicitly ena
 AXES_RESET_ON_SUCCESS    = True                                 # clear failures on good login
 AXES_ENABLE_ADMIN        = True                                 # show in Django admin
 AXES_VERBOSE             = False                                # set True temporarily to debug
-AXES_LOCKOUT_CALLABLE    = 'accounts.helpers.axes_lockout_response'  # JSON 403, no 500
+AXES_LOCKOUT_CALLABLE    = 'fleet_tracker.helpers.axes_lockout_response'  # JSON 403, no 500 ✅ FIXED
 # ─────────────────────────────────────────────────────────────────────────────
 
 if not DEBUG:
