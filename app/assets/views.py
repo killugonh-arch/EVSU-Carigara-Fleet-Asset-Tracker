@@ -744,6 +744,9 @@ def mileage_log_review(request, pk):
 
 # ─── asset requests ───────────────────────────────────────────────────────────
 
+ASSET_REQUEST_PENDING_LIMIT = 3   # max unresolved requests per staff user
+
+
 @login_required
 def asset_request_list(request):
     if request.user.is_manager or request.user.is_auditor:
@@ -763,7 +766,13 @@ def asset_request_list(request):
             'counts': counts,
         })
     qs = AssetRequest.objects.select_related('requested_by', 'reviewed_by').filter(requested_by=request.user)
-    return render(request, 'assets/asset_request_list.html', {'requests': qs})
+    my_pending_count = qs.filter(status=AssetRequestStatus.PENDING).count()
+    return render(request, 'assets/asset_request_list.html', {
+        'requests': qs,
+        'my_pending_count': my_pending_count,
+        'pending_limit': ASSET_REQUEST_PENDING_LIMIT,
+        'at_limit': my_pending_count >= ASSET_REQUEST_PENDING_LIMIT,
+    })
 
 
 @login_required
@@ -780,6 +789,18 @@ def asset_request_create(request):
     if request.user.is_superuser:
         messages.error(request, 'Admin accounts cannot submit asset requests.')
         return redirect('dashboard')
+    # Enforce pending request limit
+    my_pending_count = AssetRequest.objects.filter(
+        requested_by=request.user,
+        status=AssetRequestStatus.PENDING,
+    ).count()
+    if my_pending_count >= ASSET_REQUEST_PENDING_LIMIT:
+        messages.error(
+            request,
+            f'You have reached the limit of {ASSET_REQUEST_PENDING_LIMIT} pending asset requests. '
+            f'Please wait for your existing requests to be reviewed before submitting a new one.'
+        )
+        return redirect('asset_request_list')
     form = AssetRequestForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         ar = form.save(commit=False)
@@ -791,7 +812,11 @@ def asset_request_create(request):
         audit.info(f'ASSET_REQUEST_CREATED by={request.user.username} id={ar.pk}')
         messages.success(request, f'Asset request #{ar.pk} submitted for review.')
         return redirect('asset_request_list')
-    return render(request, 'assets/asset_request_form.html', {'form': form})
+    return render(request, 'assets/asset_request_form.html', {
+        'form': form,
+        'my_pending_count': my_pending_count,
+        'pending_limit': ASSET_REQUEST_PENDING_LIMIT,
+    })
 
 
 @login_required
