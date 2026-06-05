@@ -4,8 +4,13 @@ from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
 
+def root_redirect(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return redirect('login')
+
 urlpatterns = [
-    path('', lambda request: redirect('dashboard')),
+    path('', root_redirect),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('', include('assets.urls')),
