@@ -32,13 +32,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',        # Member 1: static on PaaS
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'axes.middleware.AxesMiddleware',                   # Member 5: brute-force protection
+    'axes.middleware.AxesMiddleware',        # ✅ must be AFTER Auth, but...
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -153,12 +153,14 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-AXES_FAILURE_LIMIT       = 5        # lock after 5 failures
-AXES_COOLOFF_TIME        = timedelta(minutes=15)
-AXES_LOCKOUT_CALLABLE    = None
+
+AXES_FAILURE_LIMIT       = 3
+AXES_COOLOFF_TIME        = timedelta(minutes=10)
 AXES_RESET_ON_SUCCESS    = True
 AXES_ENABLE_ADMIN        = True
-AXES_VERBOSE             = False
+AXES_VERBOSE             = True         
+AXES_LOCK_OUT_AT_FAILURE = True        
+AXES_LOCKOUT_CALLABLE    = 'axes.helpers.get_lockout_response'  
 
 if not DEBUG:
     SECURE_HSTS_SECONDS            = 31536000
