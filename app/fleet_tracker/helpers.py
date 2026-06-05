@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.middleware.csrf import get_token
 from fleet_tracker.settings import AXES_COOLOFF_TIME
 
 
@@ -12,7 +13,9 @@ def axes_lockout_response(request, credentials, *args, **kwargs):
             status=403,
         )
 
-    # Browser: render the login page with lockout banner + disabled form
+    # Force-generate the CSRF token so the cookie is set on this response
+    get_token(request)
+
     try:
         minutes = int(AXES_COOLOFF_TIME.total_seconds() // 60)
     except Exception:
