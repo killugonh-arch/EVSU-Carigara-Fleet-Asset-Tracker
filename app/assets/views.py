@@ -243,7 +243,7 @@ def asset_list(request):
     # Managers, auditors, maintenance see all assets (no filter)
 
     f  = AssetFilter(request.GET, queryset=qs, user=user)
-    paginator = Paginator(f.qs, 15)
+    paginator = Paginator(f.qs, 8)
     page = paginator.get_page(request.GET.get('page'))
     query_params = request.GET.copy()
     query_params.pop('page', None)
@@ -384,7 +384,7 @@ def maintenance_list(request):
         qs = qs.filter(submitted_by=request.user)
     f = MaintenanceFilter(request.GET, queryset=qs)
     sorted_qs = f.qs.annotate(priority_rank=PRIORITY_RANK).order_by('priority_rank', 'created_at')
-    paginator = Paginator(sorted_qs, 15)
+    paginator = Paginator(sorted_qs, 8)
     page = paginator.get_page(request.GET.get('page'))
     query_params = request.GET.copy()
     query_params.pop('page', None)
@@ -710,7 +710,7 @@ def mileage_log_list(request):
         'approved': qs.filter(status='approved').count(),
         'rejected': qs.filter(status='rejected').count(),
     }
-    paginator = Paginator(qs, 20)
+    paginator = Paginator(qs, 8)
     page = paginator.get_page(request.GET.get('page'))
     return render(request, 'assets/mileage_log_list.html',
                   {'logs': page, 'status_filter': status_filter, 'counts': counts})
@@ -1087,7 +1087,7 @@ def admin_asset_request_history(request):
         'approved': AssetRequest.objects.filter(status=AssetRequestStatus.APPROVED).count(),
     }
 
-    paginator = Paginator(qs, 20)
+    paginator = Paginator(qs, 8)
     page = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'assets/admin_asset_request_history.html', {
@@ -1131,7 +1131,7 @@ def admin_maintenance_request_history(request):
         'rejected':  MaintenanceRequest.objects.filter(status=MaintenanceStatus.REJECTED).count(),
     }
 
-    paginator = Paginator(qs, 20)
+    paginator = Paginator(qs, 8)
     page = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'assets/admin_maintenance_request_history.html', {
